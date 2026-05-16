@@ -60,17 +60,17 @@ export default function AddInvoicePage() {
 
   // When billing month changes, update due date and period
   const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedDate = new Date(e.target.value);
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth();
+    const value = e.target.value; // Format: YYYY-MM
+    if (!value) return;
+
+    const [yearStr, monthStr] = value.split('-');
+    const year = parseInt(yearStr, 10);
+    const monthIndex = parseInt(monthStr, 10) - 1; // 0-indexed month for Date
     
-    const billingMonthStart = new Date(year, month, 1).toISOString().split('T')[0];
-    
-    // Period should be the same month
-    const periodEnd = new Date(year, month + 1, 0).toISOString().split('T')[0];
-    
-    // Due Date is 15th of the next month
-    const dueDate = new Date(year, month + 1, 15).toISOString().split('T')[0];
+    // Explicitly generate the dates based on local selection
+    const billingMonthStart = new Date(year, monthIndex, 1).toISOString().split('T')[0];
+    const periodEnd = new Date(year, monthIndex + 1, 0).toISOString().split('T')[0];
+    const dueDate = new Date(year, monthIndex + 1, 15).toISOString().split('T')[0];
 
     setFormData(prev => ({
       ...prev,
@@ -245,6 +245,20 @@ export default function AddInvoicePage() {
       setLoading(true);
       const tenant = tenants.find(t => t.id === formData.tenant_id);
       if (!tenant) throw new Error('Tenant not found');
+
+      // 0. Prevent Duplicate Bills
+      const { data: existingInvoice } = await supabase
+        .from('invoices')
+        .select('id')
+        .eq('tenant_id', formData.tenant_id)
+        .eq('billing_date', formData.billing_month)
+        .maybeSingle();
+
+      if (existingInvoice) {
+        alert('An invoice has already been generated for this tenant for the selected billing month.');
+        setLoading(false);
+        return;
+      }
 
       // 1. Use full Unit Number as Property/Unit Identifier (e.g. MEA05 or EMA01)
       const unitNum = tenant.unit_number || 'PROP';
