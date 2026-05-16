@@ -41,13 +41,27 @@ export default function AddInvoicePage() {
   const [fetchingTenants, setFetchingTenants] = useState(true);
   const [lastInvoice, setLastInvoice] = useState<any>(null);
 
+  // Use explicit string formatting to prevent timezone shifts (e.g. IST +5:30 pushes 1st back to 31st)
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1; // 1-12
+  const currentMonthStr = String(currentMonth).padStart(2, '0');
+  
+  const initialBillingMonthStart = `${currentYear}-${currentMonthStr}-01`;
+  const daysInCurrentMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const initialPeriodEnd = `${currentYear}-${currentMonthStr}-${daysInCurrentMonth}`;
+  
+  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
+  const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
+  const initialDueDate = `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-15`;
+
   const [formData, setFormData] = useState({
     property_id: '',
     tenant_id: '',
-    billing_month: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    due_date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 15).toISOString().split('T')[0],
-    billing_period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    billing_period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
+    billing_month: initialBillingMonthStart,
+    due_date: initialDueDate,
+    billing_period_start: initialBillingMonthStart,
+    billing_period_end: initialPeriodEnd,
     rent_amount: '' as string | number,
     water_charges: '' as string | number,
     prev_electricity_reading: '' as string | number,
@@ -65,12 +79,19 @@ export default function AddInvoicePage() {
 
     const [yearStr, monthStr] = value.split('-');
     const year = parseInt(yearStr, 10);
-    const monthIndex = parseInt(monthStr, 10) - 1; // 0-indexed month for Date
+    const month = parseInt(monthStr, 10); // 1-12
     
-    // Explicitly generate the dates based on local selection
-    const billingMonthStart = new Date(year, monthIndex, 1).toISOString().split('T')[0];
-    const periodEnd = new Date(year, monthIndex + 1, 0).toISOString().split('T')[0];
-    const dueDate = new Date(year, monthIndex + 1, 15).toISOString().split('T')[0];
+    // Explicitly generate the dates as literal strings to defeat timezone shifts
+    const billingMonthStart = `${yearStr}-${monthStr}-01`;
+    
+    // Period is exact days in month
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const periodEnd = `${yearStr}-${monthStr}-${daysInMonth}`;
+    
+    // Due Date is 15th of the next month
+    const nxtMonth = month === 12 ? 1 : month + 1;
+    const nxtMonthYear = month === 12 ? year + 1 : year;
+    const dueDate = `${nxtMonthYear}-${String(nxtMonth).padStart(2, '0')}-15`;
 
     setFormData(prev => ({
       ...prev,
