@@ -9,6 +9,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+export const getCurrentProfile = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+  
+  return profile as Profile;
+};
+
 export type Property = {
   id: string;
   name: string;
@@ -21,6 +34,15 @@ export type Property = {
   owner_id: string;
   created_at: string;
   updated_at: string;
+};
+
+export type Profile = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: 'admin' | 'manager';
+  avatar_url: string | null;
+  created_at: string;
 };
 
 export type Tenant = {

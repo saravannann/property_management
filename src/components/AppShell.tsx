@@ -28,15 +28,55 @@ import {
   Settings, 
   Search, 
   Bell,
+  Shield,
+  Sun,
+  Moon,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { useColorMode } from './Providers';
 
 const drawerWidth = 260;
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
+  const colorMode = useColorMode();
   const pathname = usePathname();
+  const router = useRouter();
+  const isPublicPage = pathname === '/login' || pathname === '/setup-admin';
+
+  const [userRole, setUserRole] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session && !isPublicPage) {
+        router.push('/login');
+        return;
+      }
+      
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        setUserRole(profile?.role || 'manager');
+      }
+    };
+    checkUser();
+  }, [isPublicPage, router]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
+  if (isPublicPage) {
+    return <>{children}</>;
+  }
 
   const navItems = [
     { label: "Dashboard", icon: <LayoutDashboard size={22} />, href: "/" },
@@ -44,6 +84,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     { label: "Tenants", icon: <Users size={22} />, href: "/tenants" },
     { label: "Invoices", icon: <Receipt size={22} />, href: "/invoices" },
   ];
+
+  if (userRole === 'admin') {
+    navItems.push({ label: "User Management", icon: <Shield size={22} />, href: "/settings/users" });
+  }
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
@@ -58,7 +102,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             width: drawerWidth,
             boxSizing: 'border-box',
             backgroundColor: 'background.paper',
-            borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+            borderRight: `1px solid ${theme.palette.divider}`,
           },
         }}
       >
@@ -127,6 +171,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               />
             </ListItemButton>
           </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleLogout} sx={{ borderRadius: 2, color: 'error.main' }}>
+              <ListItemIcon sx={{ minWidth: 44, color: 'error.main' }}>
+                <LogOut size={22} />
+              </ListItemIcon>
+              <ListItemText 
+                primary={<Typography sx={{ fontWeight: 600 }}>Logout</Typography>} 
+              />
+            </ListItemButton>
+          </ListItem>
         </List>
       </Drawer>
 
@@ -136,28 +190,36 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           position="static" 
           color="transparent" 
           elevation={0} 
-          sx={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(10px)' }}
+          sx={{ borderBottom: `1px solid ${theme.palette.divider}`, backdropFilter: 'blur(10px)' }}
         >
           <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, md: 4 } }}>
             <Box sx={{ 
               display: 'flex', 
               alignItems: 'center', 
-              bgcolor: alpha('#fff', 0.03), 
+              bgcolor: theme.palette.mode === 'dark' ? alpha('#fff', 0.03) : alpha('#000', 0.03), 
               px: 2, 
               py: 0.75, 
               borderRadius: 10,
-              border: '1px solid rgba(255, 255, 255, 0.05)',
+              border: `1px solid ${theme.palette.divider}`,
               width: { xs: '100%', md: 400 },
               mr: 2
             }}>
-              <Search size={18} style={{ color: alpha('#f8fafc', 0.5) }} />
+              <Search size={18} style={{ color: theme.palette.text.secondary }} />
               <InputBase
                 placeholder="Search dashboard..."
                 sx={{ ml: 1.5, flex: 1, color: 'text.primary', fontSize: '0.875rem' }}
               />
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <IconButton 
+                onClick={colorMode.toggleColorMode} 
+                sx={{ color: 'text.secondary' }}
+                title={theme.palette.mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              >
+                {theme.palette.mode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+              </IconButton>
+              
               <IconButton sx={{ color: 'text.secondary' }}>
                 <Badge variant="dot" color="primary">
                   <Bell size={20} />
@@ -169,7 +231,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   width: 36, 
                   height: 36,
                   cursor: 'pointer',
-                  boxShadow: '0 0 10px rgba(99, 102, 241, 0.3)'
+                  boxShadow: theme.palette.mode === 'dark' ? '0 0 10px rgba(99, 102, 241, 0.3)' : 'none'
                 }}
               >
                 JD
@@ -191,7 +253,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         left: 0, 
         right: 0, 
         bgcolor: 'background.paper',
-        borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+        borderTop: `1px solid ${theme.palette.divider}`,
         justifyContent: 'space-around',
         py: 1.5,
         zIndex: 1000

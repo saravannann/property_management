@@ -1,9 +1,9 @@
 'use client';
-import { createTheme } from '@mui/material/styles';
+import { createTheme, ThemeOptions, alpha } from '@mui/material/styles';
 
-const theme = createTheme({
+export const getThemeOptions = (mode: 'light' | 'dark'): ThemeOptions => ({
   palette: {
-    mode: 'dark',
+    mode,
     primary: {
       main: '#6366f1', // Indigo 500
       light: '#818cf8',
@@ -13,14 +13,14 @@ const theme = createTheme({
       main: '#ec4899', // Pink 500
     },
     background: {
-      default: '#0a0a0c',
-      paper: '#141417',
+      default: mode === 'dark' ? '#0a0a0c' : '#f8fafc',
+      paper: mode === 'dark' ? '#141417' : '#ffffff',
     },
     text: {
-      primary: '#f8fafc',
-      secondary: '#94a3b8',
+      primary: mode === 'dark' ? '#f8fafc' : '#0f172a',
+      secondary: mode === 'dark' ? '#94a3b8' : '#64748b',
     },
-    divider: 'rgba(255, 255, 255, 0.05)',
+    divider: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
   },
   shape: {
     borderRadius: 12,
@@ -48,9 +48,13 @@ const theme = createTheme({
         {
           props: { variant: 'contained', color: 'primary' },
           style: {
-            boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.39)',
+            boxShadow: mode === 'dark' 
+              ? '0 4px 14px 0 rgba(99, 102, 241, 0.39)'
+              : '0 4px 14px 0 rgba(99, 102, 241, 0.2)',
             '&:hover': {
-              boxShadow: '0 6px 20px rgba(99, 102, 241, 0.23)',
+              boxShadow: mode === 'dark'
+                ? '0 6px 20px rgba(99, 102, 241, 0.23)'
+                : '0 6px 20px rgba(99, 102, 241, 0.15)',
             },
           },
         },
@@ -58,16 +62,18 @@ const theme = createTheme({
     },
     MuiCard: {
       styleOverrides: {
-        root: {
+        root: ({ theme }) => ({
           backgroundImage: 'none',
-          backgroundColor: '#141417',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${theme.palette.divider}`,
           transition: 'all 0.3s ease',
+          boxShadow: mode === 'light' ? '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' : 'none',
           '&:hover': {
-            borderColor: 'rgba(99, 102, 241, 0.3)',
+            borderColor: alpha(theme.palette.primary.main, 0.3),
             transform: 'translateY(-2px)',
+            boxShadow: mode === 'light' ? '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)' : 'none',
           },
-        },
+        }),
       },
     },
     MuiPaper: {
@@ -77,7 +83,26 @@ const theme = createTheme({
         },
       },
     },
+    MuiAppBar: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          backgroundColor: alpha(theme.palette.background.default, 0.8),
+          backdropFilter: 'blur(12px)',
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          color: theme.palette.text.primary,
+        }),
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: ({ theme }) => ({
+          backgroundColor: theme.palette.background.paper,
+          borderRight: `1px solid ${theme.palette.divider}`,
+        }),
+      },
+    },
   },
 });
 
+const theme = createTheme(getThemeOptions('dark'));
 export default theme;

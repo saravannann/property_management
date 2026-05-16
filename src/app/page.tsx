@@ -1,4 +1,5 @@
 'use client';
+import React from 'react';
 import { 
   Box, 
   Grid, 
@@ -8,7 +9,8 @@ import {
   Button, 
   Stack,
   alpha,
-  useTheme
+  useTheme,
+  CircularProgress
 } from '@mui/material';
 import { 
   Building2, 
@@ -19,53 +21,135 @@ import {
   ArrowDownRight, 
   Clock, 
   Plus,
-  ArrowRight
+  ArrowRight,
+  Home
 } from "lucide-react";
 import Link from "next/link";
+import { supabase } from '@/lib/supabase';
 
 export default function Dashboard() {
   const theme = useTheme();
+  const [loading, setLoading] = React.useState(true);
+  const [data, setData] = React.useState({
+    propertyCount: 0,
+    tenantCount: 0,
+    totalRevenue: 0,
+    pendingInvoices: 0,
+    vacantApartments: 0,
+    vacantCommercial: 0,
+    recentActivity: [] as any[]
+  });
+
+  React.useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // 1. Fetch Properties with their tenant counts
+        const { data: props } = await supabase
+          .from('properties')
+          .select('property_type, total_units, tenants:tenants(count)')
+          .eq('owner_id', user.id);
+        
+        const propertyCount = props?.length || 0;
+        
+        let vacantApartments = 0;
+        let vacantCommercial = 0;
+
+        props?.forEach(p => {
+          const type = (p.property_type || '').toLowerCase();
+          const total = Number(p.total_units) || 0;
+          const occupied = p.tenants?.[0]?.count || 0;
+          const vacant = Math.max(0, total - occupied);
+
+          if (type.includes('apartment') || type.includes('villa')) {
+            vacantApartments += vacant;
+          } else {
+            vacantCommercial += vacant;
+          }
+        });
+
+        // 2. Fetch Total Tenant Count
+        const { count: tenantCount } = await supabase
+          .from('tenants')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_active', true);
+
+        // 3. Calculate Revenue
+        const { data: tenants } = await supabase
+          .from('tenants')
+          .select('monthly_rent')
+          .eq('is_active', true);
+        
+        const totalRevenue = tenants?.reduce((acc, t) => acc + Number(t.monthly_rent), 0) || 0;
+
+        // 4. Pending Invoices
+        const { count: pendingInvoices } = await supabase
+          .from('invoices')
+          .select('*', { count: 'exact', head: true })
+          .eq('status', 'pending');
+
+        // 5. Recent Activity
+        const { data: recentProps } = await supabase
+          .from('properties')
+          .select('name, created_at')
+          .order('created_at', { ascending: false })
+          .limit(4);
+
+        setData({
+          propertyCount,
+          tenantCount: tenantCount || 0,
+          totalRevenue,
+          pendingInvoices: pendingInvoices || 0,
+          vacantApartments,
+          vacantCommercial,
+          recentActivity: recentProps?.map(p => ({
+            title: "Property Added",
+            description: `${p.name} was added to your portfolio`,
+            time: new Date(p.created_at).toLocaleDateString(),
+            status: 'success'
+          })) || []
+        });
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const stats = [
     { 
-      label: "Total Properties", 
-      value: "12", 
-      icon: <Building2 size={24} />, 
-      trend: "+2 this month",
-      trendUp: true,
+      label: "Properties", 
+      value: data.propertyCount.toString(), 
+      icon: <Building2 size={18} />, 
       color: theme.palette.primary.main
     },
     { 
-      label: "Active Tenants", 
-      value: "48", 
-      icon: <Users size={24} />, 
-      trend: "+5 this month",
-      trendUp: true,
+      label: "Tenants", 
+      value: data.tenantCount.toString(), 
+      icon: <Users size={18} />, 
       color: theme.palette.secondary.main
     },
     { 
-      label: "Monthly Revenue", 
-      value: "₹4,25,000", 
-      icon: <TrendingUp size={24} />, 
-      trend: "+12% vs last month",
-      trendUp: true,
-      color: '#10b981' // emerald-500
+      label: "Vacant Units", 
+      isSplit: true,
+      apartments: data.vacantApartments,
+      commercial: data.vacantCommercial,
+      icon: <Home size={18} />, 
+      color: '#f59e0b' // Amber
     },
     { 
-      label: "Pending Invoices", 
-      value: "08", 
-      icon: <Receipt size={24} />, 
-      trend: "-2 vs last month",
-      trendUp: false,
-      color: '#f59e0b' // amber-500
+      label: "Revenue", 
+      value: `₹${data.totalRevenue.toLocaleString()}`, 
+      icon: <TrendingUp size={18} />, 
+      color: '#10b981' // Emerald
     },
-  ];
-
-  const recentActivity = [
-    { title: "Invoice Paid", description: "Rahul Sharma paid rent for Unit 4B", time: "2 hours ago", status: 'success' },
-    { title: "New Tenant", description: "Priya Singh added to Emerald Heights", time: "5 hours ago", status: 'info' },
-    { title: "Maintenance Alert", description: "Water leakage reported in Unit 2A", time: "1 day ago", status: 'warning' },
-    { title: "Agreement Expiring", description: "Unit 1C agreement expires in 15 days", status: 'error', time: "2 days ago" },
   ];
 
   return (
@@ -79,50 +163,56 @@ export default function Dashboard() {
             Insights and management for your property portfolio.
           </Typography>
         </Box>
-        <Button 
-          variant="contained" 
-          startIcon={<Plus size={18} />}
-          component={Link}
-          href="/properties/add"
-        >
-          Add Property
-        </Button>
+        <Link href="/properties/add" style={{ textDecoration: 'none' }}>
+          <Button 
+            variant="contained" 
+            startIcon={<Plus size={18} />}
+          >
+            Add Property
+          </Button>
+        </Link>
       </Box>
 
       {/* Stats Grid */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <Grid container spacing={3} sx={{ mb: 6 }}>
         {stats.map((stat, i) => (
           <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={i}>
             <Card sx={{ height: '100%' }}>
               <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
                   <Box sx={{ 
-                    p: 1.5, 
-                    borderRadius: 2.5, 
+                    p: 1.2, 
+                    borderRadius: 2, 
                     bgcolor: alpha(stat.color, 0.1), 
                     color: stat.color,
                     display: 'flex'
                   }}>
                     {stat.icon}
                   </Box>
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 0.5, 
-                    color: stat.trendUp ? 'success.main' : 'warning.main',
-                    fontSize: '0.75rem',
-                    fontWeight: 700
-                  }}>
-                    {stat.trendUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                    {stat.trend}
-                  </Box>
                 </Box>
-                <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
-                  {stat.value}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                  {stat.label}
-                </Typography>
+                
+                {stat.isSplit ? (
+                  <Stack direction="row" spacing={2} sx={{ alignItems: 'end', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Typography variant="h5" sx={{ fontWeight: 800 }}>{loading ? <CircularProgress size={16} /> : stat.apartments}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Apartments</Typography>
+                    </Box>
+                    <Box sx={{ height: 30, width: '1px', bgcolor: 'rgba(255,255,255,0.1)' }} />
+                    <Box sx={{ textAlign: 'right' }}>
+                      <Typography variant="h5" sx={{ fontWeight: 800 }}>{loading ? <CircularProgress size={16} /> : stat.commercial}</Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Commercial</Typography>
+                    </Box>
+                  </Stack>
+                ) : (
+                  <>
+                    <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+                      {loading ? <CircularProgress size={20} /> : stat.value}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+                      {stat.label}
+                    </Typography>
+                  </>
+                )}
               </CardContent>
             </Card>
           </Grid>
@@ -141,32 +231,42 @@ export default function Dashboard() {
                 </Button>
               </Box>
               <Stack spacing={4}>
-                {recentActivity.map((activity, i) => (
-                  <Box key={i} sx={{ display: 'flex', gap: 2.5 }}>
-                    <Box sx={{ 
-                      width: 10, 
-                      height: 10, 
-                      borderRadius: '50%', 
-                      bgcolor: 'primary.main', 
-                      mt: 0.75,
-                      boxShadow: '0 0 10px rgba(99, 102, 241, 0.5)'
-                    }} />
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                          {activity.title}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Clock size={12} />
-                          {activity.time}
+                {loading ? (
+                  <Box sx={{ py: 4, textAlign: 'center' }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : data.recentActivity.length > 0 ? (
+                  data.recentActivity.map((activity, i) => (
+                    <Box key={i} sx={{ display: 'flex', gap: 2.5 }}>
+                      <Box sx={{ 
+                        width: 10, 
+                        height: 10, 
+                        borderRadius: '50%', 
+                        bgcolor: 'primary.main', 
+                        mt: 0.75,
+                        boxShadow: theme.palette.mode === 'dark' ? '0 0 10px rgba(99, 102, 241, 0.5)' : 'none'
+                      }} />
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                            {activity.title}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Clock size={12} />
+                            {activity.time}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {activity.description}
                         </Typography>
                       </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {activity.description}
-                      </Typography>
                     </Box>
-                  </Box>
-                ))}
+                  ))
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    No recent activity found.
+                  </Typography>
+                )}
               </Stack>
             </CardContent>
           </Card>
@@ -193,13 +293,13 @@ export default function Dashboard() {
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>Quick Actions</Typography>
                 <Stack spacing={1.5}>
-                  <Button variant="text" fullWidth sx={{ justifyContent: 'start', py: 1.5, bgcolor: alpha('#fff', 0.02) }} startIcon={<Receipt size={18} color="#f59e0b" />}>
+                  <Button variant="text" fullWidth sx={{ justifyContent: 'start', py: 1.5, bgcolor: theme.palette.mode === 'dark' ? alpha('#fff', 0.02) : alpha('#000', 0.02) }} startIcon={<Receipt size={18} color="#f59e0b" />}>
                     Generate Monthly Invoices
                   </Button>
-                  <Button variant="text" fullWidth sx={{ justifyContent: 'start', py: 1.5, bgcolor: alpha('#fff', 0.02) }} startIcon={<Users size={18} color="#6366f1" />}>
+                  <Button variant="text" fullWidth sx={{ justifyContent: 'start', py: 1.5, bgcolor: theme.palette.mode === 'dark' ? alpha('#fff', 0.02) : alpha('#000', 0.02) }} startIcon={<Users size={18} color="#6366f1" />}>
                     Pending Tenant Requests
                   </Button>
-                  <Button variant="text" fullWidth sx={{ justifyContent: 'start', py: 1.5, bgcolor: alpha('#fff', 0.02) }} startIcon={<Building2 size={18} color="#c084fc" />}>
+                  <Button variant="text" fullWidth sx={{ justifyContent: 'start', py: 1.5, bgcolor: theme.palette.mode === 'dark' ? alpha('#fff', 0.02) : alpha('#000', 0.02) }} startIcon={<Building2 size={18} color="#c084fc" />}>
                     Update Property Media
                   </Button>
                 </Stack>
