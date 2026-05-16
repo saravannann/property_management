@@ -42,6 +42,7 @@ export default function AddInvoicePage() {
   const [lastInvoice, setLastInvoice] = useState<any>(null);
 
   const [formData, setFormData] = useState({
+    property_id: '',
     tenant_id: '',
     billing_month: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     due_date: new Date(new Date().getFullYear(), new Date().getMonth(), 15).toISOString().split('T')[0],
@@ -148,6 +149,24 @@ export default function AddInvoicePage() {
     fetchTenantData();
   }, [formData.tenant_id, tenants]);
 
+  // Compute unique properties for the first dropdown
+  const uniqueProperties = useMemo(() => {
+    const propsMap = new Map();
+    tenants.forEach(t => {
+      if (t.property_id && t.properties?.name) {
+        propsMap.set(t.property_id, { id: t.property_id, name: t.properties.name });
+      }
+    });
+    return Array.from(propsMap.values());
+  }, [tenants]);
+
+  // Filter tenants based on selected property
+  const filteredTenants = useMemo(() => {
+    return formData.property_id 
+      ? tenants.filter(t => t.property_id === formData.property_id)
+      : [];
+  }, [tenants, formData.property_id]);
+
   // Proration Logic
   const prorationDetails = useMemo(() => {
     const start = new Date(formData.billing_period_start);
@@ -193,7 +212,23 @@ export default function AddInvoicePage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'property_id') {
+      setFormData(prev => ({
+        ...prev,
+        property_id: value,
+        tenant_id: '',
+        rent_amount: '',
+        water_charges: '',
+        prev_electricity_reading: '',
+        curr_electricity_reading: '',
+        electricity_rate: '',
+        misc_charges: '',
+        previous_balance: ''
+      }));
+      setLastInvoice(null);
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSave = async () => {
@@ -297,13 +332,26 @@ export default function AddInvoicePage() {
                 </Box>
                 
                 <Grid container spacing={3}>
-                  <Grid size={{ xs: 12 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <TextField 
-                      fullWidth select label="Select Tenant" name="tenant_id" value={formData.tenant_id} onChange={handleChange} required
+                      fullWidth select label="Select Property" name="property_id" value={formData.property_id} onChange={handleChange} required
                       disabled={fetchingTenants}
                     >
-                      {tenants.map((t) => (
-                        <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>
+                      {uniqueProperties.map((p) => (
+                        <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField 
+                      fullWidth select label="Select Tenant" name="tenant_id" value={formData.tenant_id} onChange={handleChange} required
+                      disabled={!formData.property_id || fetchingTenants}
+                    >
+                      {filteredTenants.length === 0 && formData.property_id && (
+                        <MenuItem disabled value="">No active tenants</MenuItem>
+                      )}
+                      {filteredTenants.map((t) => (
+                        <MenuItem key={t.id} value={t.id}>{t.name} {t.unit_number ? `(${t.unit_number})` : ''}</MenuItem>
                       ))}
                     </TextField>
                   </Grid>
