@@ -12,7 +12,8 @@ import {
   CircularProgress,
   Stack,
   alpha,
-  useTheme
+  useTheme,
+  InputAdornment
 } from '@mui/material';
 import { Save, X, User, Phone, Mail, Building2, Hash, CreditCard, FileText, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -35,6 +36,8 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
     property_id: '',
     unit_number: '',
     monthly_rent: '',
+    electricity_rate: 10,
+    water_charges: 0,
     security_deposit: '',
     move_in_date: '',
     move_out_date: '',
@@ -68,6 +71,8 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
             property_id: tenant.property_id || '',
             unit_number: tenant.unit_number || '',
             monthly_rent: tenant.monthly_rent?.toString() || '',
+            electricity_rate: tenant.electricity_rate || 10,
+            water_charges: tenant.water_charges || 0,
             security_deposit: tenant.security_deposit?.toString() || '',
             move_in_date: tenant.move_in_date || '',
             move_out_date: tenant.move_out_date || '',
@@ -308,7 +313,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                       }}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
+                  <Grid size={{ xs: 12, md: 4 }}>
                     <TextField
                       fullWidth
                       label="Security Deposit"
@@ -319,6 +324,38 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                       slotProps={{
                         input: {
                           startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>₹</Typography>
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      fullWidth
+                      label="Electricity Rate"
+                      name="electricity_rate"
+                      type="number"
+                      value={formData.electricity_rate}
+                      onChange={handleChange}
+                      slotProps={{
+                        input: {
+                          startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>₹</Typography>,
+                          endAdornment: <InputAdornment position="end">/ unit</InputAdornment>
+                        }
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField
+                      fullWidth
+                      label="Water Charges (LumpSum)"
+                      name="water_charges"
+                      type="number"
+                      value={formData.water_charges}
+                      onChange={handleChange}
+                      slotProps={{
+                        input: {
+                          startAdornment: <Typography sx={{ mr: 1, color: 'text.secondary' }}>₹</Typography>,
+                          endAdornment: <InputAdornment position="end">/ month</InputAdornment>
                         }
                       }}
                     />

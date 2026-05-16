@@ -51,6 +51,8 @@ export default function AddTenantPage() {
     property_id: '',
     unit_number: '',
     monthly_rent: '',
+    electricity_rate: 10,
+    water_charges: 0,
     security_deposit: '',
     move_in_date: new Date().toISOString().split('T')[0],
     agreement_start_date: '',
@@ -278,10 +280,22 @@ export default function AddTenantPage() {
                       slotProps={{ input: { startAdornment: <InputAdornment position="start"><IndianRupee size={18} /></InputAdornment> } }}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, md: 6 }}>
+                  <Grid size={{ xs: 12, md: 4 }}>
                     <TextField 
                       fullWidth type="number" label="Security Deposit" name="security_deposit" value={formData.security_deposit} onChange={handleChange}
                       slotProps={{ input: { startAdornment: <InputAdornment position="start"><IndianRupee size={18} /></InputAdornment> } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField 
+                      fullWidth type="number" label="Electricity Rate" name="electricity_rate" value={formData.electricity_rate} onChange={handleChange}
+                      slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment>, endAdornment: <InputAdornment position="end">/ unit</InputAdornment> } }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <TextField 
+                      fullWidth type="number" label="Water Charges (LumpSum)" name="water_charges" value={formData.water_charges} onChange={handleChange}
+                      slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment>, endAdornment: <InputAdornment position="end">/ month</InputAdornment> } }}
                     />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>

@@ -38,6 +38,8 @@ CREATE TABLE tenants (
   property_id UUID REFERENCES properties(id) ON DELETE CASCADE,
   unit_number TEXT,
   monthly_rent DECIMAL(12, 2) NOT NULL,
+  electricity_rate DECIMAL(12, 2) DEFAULT 10,
+  water_charges DECIMAL(12, 2) DEFAULT 0, -- Monthly lumpsum water fee
   security_deposit DECIMAL(12, 2) NOT NULL,
   move_in_date DATE NOT NULL,
   move_out_date DATE,

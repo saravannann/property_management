@@ -62,7 +62,7 @@ export default function AddInvoicePage() {
       try {
         const { data, error } = await supabase
           .from('tenants')
-          .select('id, name, property_id, monthly_rent')
+          .select('id, name, property_id, monthly_rent, electricity_rate, water_charges')
           .eq('is_active', true)
           .order('name');
         if (error) throw error;
@@ -105,6 +105,8 @@ export default function AddInvoicePage() {
         setFormData(prev => ({
           ...prev,
           rent_amount: tenant?.monthly_rent || 0,
+          electricity_rate: tenant?.electricity_rate || 10,
+          water_charges: tenant?.water_charges || 0,
           prev_electricity_reading: lastInv?.curr_electricity_reading || 0,
           previous_balance: totalUnpaid
         }));
