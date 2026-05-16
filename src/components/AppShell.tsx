@@ -93,19 +93,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const navItems = [
-    { label: "Dashboard", icon: <LayoutDashboard size={22} />, href: "/" },
-    { label: "Properties", icon: <Building2 size={22} />, href: "/properties" },
-    { label: "Tenants", icon: <Users size={22} />, href: "/tenants" },
-    { label: "Invoices", icon: <Receipt size={22} />, href: "/invoices" },
+    { label: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/" },
+    { label: "Properties", icon: <Building2 size={20} />, href: "/properties" },
+    { label: "Tenants", icon: <Users size={20} />, href: "/tenants" },
+    { label: "Invoices", icon: <Receipt size={20} />, href: "/invoices" },
   ];
 
   if (userRole === 'admin') {
-    navItems.push({ label: "User Management", icon: <Shield size={22} />, href: "/settings/users" });
+    navItems.push({ label: "Users", icon: <Shield size={20} />, href: "/settings/users" });
   }
 
   return (
     <Box sx={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      {/* Sidebar */}
+      {/* Sidebar (Existing Desktop Drawer code here...) */}
       <Drawer
         variant="permanent"
         sx={{
@@ -178,7 +178,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <ListItem disablePadding>
             <ListItemButton component={Link} href="/settings" sx={{ borderRadius: 2 }}>
               <ListItemIcon sx={{ minWidth: 44, color: 'text.secondary' }}>
-                <Settings size={22} />
+                <Settings size={20} />
               </ListItemIcon>
               <ListItemText 
                 primary={<Typography sx={{ fontWeight: 500 }}>Settings</Typography>} 
@@ -188,7 +188,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <ListItem disablePadding>
             <ListItemButton onClick={handleLogout} sx={{ borderRadius: 2, color: 'error.main' }}>
               <ListItemIcon sx={{ minWidth: 44, color: 'error.main' }}>
-                <LogOut size={22} />
+                <LogOut size={20} />
               </ListItemIcon>
               <ListItemText 
                 primary={<Typography sx={{ fontWeight: 600 }}>Logout</Typography>} 
@@ -198,57 +198,41 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </List>
       </Drawer>
 
-      {/* Main App Bar and Content */}
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', pb: { xs: 8, md: 0 } }}>
         <AppBar 
           position="static" 
           color="transparent" 
           elevation={0} 
           sx={{ borderBottom: `1px solid ${theme.palette.divider}`, backdropFilter: 'blur(10px)' }}
         >
-          <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 2, md: 4 } }}>
+          <Toolbar sx={{ justifyContent: 'space-between', px: { xs: 1.5, md: 4 }, minHeight: { xs: 56, md: 64 } }}>
             <Box sx={{ 
               display: 'flex', 
               alignItems: 'center', 
               bgcolor: theme.palette.mode === 'dark' ? alpha('#fff', 0.03) : alpha('#000', 0.03), 
               px: 2, 
-              py: 0.75, 
+              py: 0.5, 
               borderRadius: 10,
               border: `1px solid ${theme.palette.divider}`,
               width: { xs: '100%', md: 400 },
               mr: 2
             }}>
-              <Search size={18} style={{ color: theme.palette.text.secondary }} />
+              <Search size={16} style={{ color: theme.palette.text.secondary }} />
               <InputBase
-                placeholder="Search dashboard..."
-                sx={{ ml: 1.5, flex: 1, color: 'text.primary', fontSize: '0.875rem' }}
+                placeholder="Search..."
+                sx={{ ml: 1, flex: 1, color: 'text.primary', fontSize: '0.85rem' }}
               />
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
               <IconButton 
                 onClick={colorMode.toggleColorMode} 
                 sx={{ color: 'text.secondary' }}
-                title={theme.palette.mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               >
-                {theme.palette.mode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-              </IconButton>
-              
-              <IconButton sx={{ color: 'text.secondary' }}>
-                <Badge variant="dot" color="primary">
-                  <Bell size={20} />
-                </Badge>
+                {theme.palette.mode === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
               </IconButton>
               <Avatar 
-                sx={{ 
-                  bgcolor: 'primary.main', 
-                  width: 36, 
-                  height: 36,
-                  cursor: 'pointer',
-                  boxShadow: theme.palette.mode === 'dark' ? '0 0 10px rgba(99, 102, 241, 0.3)' : 'none',
-                  fontSize: '0.875rem',
-                  fontWeight: 700
-                }}
+                sx={{ bgcolor: 'primary.main', width: 32, height: 32, fontSize: '0.8rem', fontWeight: 700 }}
               >
                 {getInitials(userName)}
               </Avatar>
@@ -256,7 +240,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           </Toolbar>
         </AppBar>
 
-        <Box sx={{ flexGrow: 1, p: { xs: 2, md: 4 }, overflowY: 'auto' }}>
+        <Box sx={{ flexGrow: 1, p: { xs: 1.5, md: 4 }, overflowY: 'auto' }}>
           {children}
         </Box>
       </Box>
@@ -271,16 +255,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         bgcolor: 'background.paper',
         borderTop: `1px solid ${theme.palette.divider}`,
         justifyContent: 'space-around',
-        py: 1.5,
-        zIndex: 1000
+        py: 1,
+        zIndex: 1000,
+        boxShadow: '0 -4px 10px rgba(0,0,0,0.05)'
       }}>
         {navItems.map((item) => {
           const active = pathname === item.href;
           return (
-            <Link key={item.label} href={item.href} style={{ textDecoration: 'none', textAlign: 'center' }}>
-              <Box sx={{ color: active ? 'primary.main' : 'text.secondary', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+            <Link key={item.label} href={item.href} style={{ textDecoration: 'none', textAlign: 'center', flex: 1 }}>
+              <Box sx={{ color: active ? 'primary.main' : 'text.secondary', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.25 }}>
                 {item.icon}
-                <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                <Typography variant="caption" sx={{ fontWeight: active ? 700 : 500, fontSize: '0.6rem' }}>
                   {item.label}
                 </Typography>
               </Box>

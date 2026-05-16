@@ -235,9 +235,9 @@ export default function Dashboard() {
       </Box>
 
       {/* Stats Grid */}
-      <Grid container spacing={3} sx={{ mb: 6 }}>
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 6 }}>
         {stats.map((stat, i) => (
-          <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={i}>
+          <Grid size={{ xs: 6, sm: 6, lg: 3 }} key={i}>
             <Link href={stat.path} style={{ textDecoration: 'none' }}>
               <Card sx={{ 
                 height: '100%', 
@@ -253,11 +253,11 @@ export default function Dashboard() {
                   }
                 }
               }}>
-                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: { xs: 1.5, sm: 2 } }}>
+                <CardContent sx={{ p: { xs: 1.5, sm: 3 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: { xs: 1, sm: 2 } }}>
                     <Box className="stat-icon" sx={{ 
-                      p: 1.2, 
-                      borderRadius: 2, 
+                      p: { xs: 0.8, sm: 1.2 }, 
+                      borderRadius: 1.5, 
                       bgcolor: alpha(stat.color, 0.1), 
                       color: stat.color,
                       display: 'flex',
@@ -269,39 +269,34 @@ export default function Dashboard() {
                   
                   {stat.isSplit ? (
                     <>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 2, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 1.5, fontSize: { xs: '0.65rem', sm: '0.875rem' }, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                         {stat.label}
                       </Typography>
                       <Stack 
-                        direction={{ xs: 'column', sm: 'row' }} 
-                        spacing={{ xs: 1.5, sm: 2 }} 
-                        sx={{ alignItems: { xs: 'flex-start', sm: 'flex-end' }, justifyContent: 'space-between' }}
+                        direction="column" 
+                        spacing={1} 
+                        sx={{ alignItems: 'flex-start' }}
                       >
-                        <Box>
-                          <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                            {loading ? <CircularProgress size={16} /> : stat.apartments}
+                        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>
+                            {loading ? <CircularProgress size={12} /> : stat.apartments}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Apartments</Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.6rem' }}>APT</Typography>
                         </Box>
-                        <Box sx={{ 
-                          height: { xs: '1px', sm: 30 }, 
-                          width: { xs: '100%', sm: '1px' }, 
-                          bgcolor: 'rgba(255,255,255,0.1)' 
-                        }} />
-                        <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-                          <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
-                            {loading ? <CircularProgress size={16} /> : stat.commercial}
+                        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                          <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>
+                            {loading ? <CircularProgress size={12} /> : stat.commercial}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Commercial</Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.6rem' }}>COM</Typography>
                         </Box>
                       </Stack>
                     </>
                   ) : (
                     <>
-                      <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
-                        {loading ? <CircularProgress size={20} /> : stat.value}
+                      <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.2, fontSize: { xs: '1.1rem', sm: '2.125rem' } }}>
+                        {loading ? <CircularProgress size={16} /> : stat.value}
                       </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
                         {stat.label}
                       </Typography>
                     </>

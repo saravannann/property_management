@@ -118,25 +118,26 @@ export default function PropertiesPage() {
 
   return (
     <Box sx={{ animation: 'fadeIn 0.5s ease' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, md: 4 } }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
             Properties
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
             Manage your real estate portfolio across multiple locations.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={2}>
-          <Button variant="outlined" startIcon={<Filter size={18} />}>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" size="small" startIcon={<Filter size={16} />}>
             Filter
           </Button>
           <Link href="/properties/add" style={{ textDecoration: 'none' }}>
             <Button 
               variant="contained" 
-              startIcon={<Plus size={18} />}
+              size="small"
+              startIcon={<Plus size={16} />}
             >
-              Add Property
+              Add
             </Button>
           </Link>
         </Stack>
@@ -147,16 +148,16 @@ export default function PropertiesPage() {
         display: 'flex', 
         alignItems: 'center', 
         bgcolor: 'background.paper', 
-        px: 3, 
-        py: 1.5, 
-        borderRadius: 3,
+        px: 2, 
+        py: 1, 
+        borderRadius: 2,
         border: '1px solid rgba(255, 255, 255, 0.05)',
-        mb: 4
+        mb: { xs: 2, md: 4 }
       }}>
-        <Search size={20} style={{ color: alpha('#f8fafc', 0.5) }} />
+        <Search size={18} style={{ color: alpha('#f8fafc', 0.5) }} />
         <InputBase
-          placeholder="Search by property name, address or type..."
-          sx={{ ml: 2, flex: 1, color: 'text.primary', fontSize: '0.95rem' }}
+          placeholder="Search..."
+          sx={{ ml: 1.5, flex: 1, color: 'text.primary', fontSize: '0.85rem' }}
         />
       </Box>
 
@@ -165,10 +166,11 @@ export default function PropertiesPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <Grid container spacing={4}>
+        <Grid container spacing={{ xs: 2, sm: 4 }}>
           {properties.map((property) => (
             <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={property.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                {/* ... existing CardMedia logic ... */}
                 {(() => {
                   const type = (property.property_type || property.type || 'Apartment').toLowerCase();
                   const getDefaultImage = () => {
@@ -183,20 +185,20 @@ export default function PropertiesPage() {
                       image={property.image || getDefaultImage()}
                       alt={property.name}
                       sx={{ 
-                        height: { xs: 160, sm: 220 },
+                        height: { xs: 120, sm: 220 },
                         transition: 'transform 0.5s ease', 
                         '&:hover': { transform: 'scale(1.05)' } 
                       }}
                     />
                   );
                 })()}
-                <Box sx={{ position: 'absolute', top: 12, right: 12 }}>
+                <Box sx={{ position: 'absolute', top: 10, right: 10 }}>
                   <IconButton 
                     size="small" 
                     onClick={(e) => handleMenuOpen(e, property.id)}
                     sx={{ bgcolor: alpha('#000', 0.4), color: '#fff', '&:hover': { bgcolor: alpha('#000', 0.6) } }}
                   >
-                    <MoreVertical size={16} />
+                    <MoreVertical size={14} />
                   </IconButton>
                 </Box>
                 
@@ -216,54 +218,54 @@ export default function PropertiesPage() {
                       size="small"
                       sx={{ 
                         position: 'absolute', 
-                        top: { xs: 125, sm: 185 }, 
-                        left: 12, 
+                        top: { xs: 90, sm: 185 }, 
+                        left: 10, 
                         bgcolor: colors.bg, 
                         color: colors.text,
                         fontWeight: 800,
-                        fontSize: '0.6rem',
+                        fontSize: '0.55rem',
                         textTransform: 'uppercase',
                         boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
-                        height: 20
+                        height: 18
                       }} 
                     />
                   );
                 })()}
                 
-                <CardContent sx={{ flexGrow: 1, p: { xs: 2, sm: 3 } }}>
-                  <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                <CardContent sx={{ flexGrow: 1, p: { xs: 1.5, sm: 3 } }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.25, fontSize: { xs: '0.95rem', sm: '1.25rem' } }}>
                     {property.name}
                   </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 2, sm: 3 }, color: 'text.secondary' }}>
-                    <MapPin size={14} color="#6366f1" />
-                    <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>{property.city || property.address}</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: { xs: 1, sm: 3 }, color: 'text.secondary' }}>
+                    <MapPin size={12} color="#6366f1" />
+                    <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>{property.city || property.address}</Typography>
                   </Box>
 
                   <Box sx={{ 
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     bgcolor: alpha('#fff', 0.02),
-                    p: { xs: 1.5, sm: 2 },
-                    borderRadius: 2,
+                    p: { xs: 1, sm: 2 },
+                    borderRadius: 1.5,
                     border: '1px solid rgba(255, 255, 255, 0.05)',
-                    mb: { xs: 2, sm: 3 }
+                    mb: { xs: 1.5, sm: 3 }
                   }}>
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5, fontSize: '0.65rem' }}>UNITS</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: { xs: '1rem', sm: '1.25rem' } }}>{property.total_units || property.units}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.25, fontSize: '0.6rem' }}>UNITS</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>{property.total_units || property.units}</Typography>
                     </Box>
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5, fontSize: '0.65rem' }}>OCCUPIED</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main', fontSize: { xs: '1rem', sm: '1.25rem' } }}>{property.occupied || 0}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.25, fontSize: '0.6rem' }}>OCCUPIED</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main', fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>{property.occupied || 0}</Typography>
                     </Box>
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.5, fontSize: '0.65rem' }}>VACANT</Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main', fontSize: { xs: '1rem', sm: '1.25rem' } }}>{(property.total_units || property.units) - (property.occupied || 0)}</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.25, fontSize: '0.6rem' }}>VACANT</Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main', fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>{(property.total_units || property.units) - (property.occupied || 0)}</Typography>
                     </Box>
                   </Box>
 
                   <Link href={`/tenants?propertyId=${property.id}`} style={{ textDecoration: 'none', width: '100%' }}>
-                    <Button variant="contained" fullWidth size="small" endIcon={<ArrowRight size={16} />}>Tenants</Button>
+                    <Button variant="contained" fullWidth size="small" endIcon={<ArrowRight size={14} />} sx={{ py: { xs: 0.5, sm: 1 }, fontSize: '0.75rem' }}>Tenants</Button>
                   </Link>
                 </CardContent>
               </Card>

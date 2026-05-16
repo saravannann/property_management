@@ -5,6 +5,7 @@ import {
   Typography, 
   Button, 
   Card, 
+  CardContent,
   Table, 
   TableBody, 
   TableCell, 
@@ -132,43 +133,36 @@ function TenantsContent() {
 
   return (
     <Box sx={{ animation: 'fadeIn 0.5s ease' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, md: 4 } }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
+          <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
             Tenants
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Overview of current residents and lease agreements.
+          <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+            Manage residents and lease agreements.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <TextField
             select
             size="small"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            sx={{ minWidth: 120 }}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Filter size={16} />
-                  </InputAdornment>
-                ),
-              }
-            }}
+            sx={{ minWidth: { xs: 80, sm: 120 }, '& .MuiSelect-select': { py: 0.75, fontSize: '0.75rem' } }}
           >
-            <MenuItem value="all">All Status</MenuItem>
+            <MenuItem value="all">All</MenuItem>
             <MenuItem value="active">Active</MenuItem>
             <MenuItem value="inactive">Inactive</MenuItem>
           </TextField>
           <Button 
             variant="contained" 
-            startIcon={<Plus size={18} />}
+            size="small"
+            startIcon={<Plus size={16} />}
             component={Link}
             href="/tenants/add"
+            sx={{ whiteSpace: 'nowrap' }}
           >
-            Add Tenant
+            Add
           </Button>
         </Stack>
       </Box>
@@ -178,16 +172,16 @@ function TenantsContent() {
         display: 'flex', 
         alignItems: 'center', 
         bgcolor: 'background.paper', 
-        px: 3, 
-        py: 1.5, 
-        borderRadius: 3,
+        px: 2, 
+        py: 1, 
+        borderRadius: 2,
         border: '1px solid rgba(255, 255, 255, 0.05)',
-        mb: 4
+        mb: { xs: 2, md: 4 }
       }}>
-        <Search size={20} style={{ color: alpha('#f8fafc', 0.5) }} />
+        <Search size={18} style={{ color: alpha('#f8fafc', 0.5) }} />
         <InputBase
-          placeholder="Search by name, contact or unit number..."
-          sx={{ ml: 2, flex: 1, color: 'text.primary', fontSize: '0.95rem' }}
+          placeholder="Search..."
+          sx={{ ml: 1, flex: 1, color: 'text.primary', fontSize: '0.85rem' }}
         />
       </Box>
 
@@ -196,96 +190,138 @@ function TenantsContent() {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Card}>
-          <Table sx={{ minWidth: 650 }}>
-            <TableHead sx={{ bgcolor: alpha('#fff', 0.02) }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Tenant</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Contact Info</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Property / Unit</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Monthly Rent</TableCell>
-                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Status</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {tenants.map((tenant) => {
-                const statusInfo = getStatusColor(tenant.is_active ? 'Active' : 'Inactive');
-                return (
-                  <TableRow key={tenant.id} sx={{ '&:hover': { bgcolor: alpha('#fff', 0.01) } }}>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar sx={{ bgcolor: alpha('#6366f1', 0.1), color: 'primary.main', fontWeight: 700 }}>
+        <>
+          {/* Mobile View: Compact Cards */}
+          <Stack spacing={1.5} sx={{ display: { xs: 'flex', md: 'none' }, mb: 4 }}>
+            {tenants.map((tenant) => {
+              const statusInfo = getStatusColor(tenant.is_active ? 'Active' : 'Inactive');
+              return (
+                <Card key={tenant.id} sx={{ bgcolor: alpha('#fff', 0.01) }}>
+                  <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Box sx={{ display: 'flex', gap: 1.5 }}>
+                        <Avatar sx={{ width: 32, height: 32, fontSize: '0.75rem', bgcolor: alpha('#6366f1', 0.1), color: 'primary.main', fontWeight: 700 }}>
                           {tenant.name.split(' ').map((n: string) => n[0]).join('')}
                         </Avatar>
                         <Box>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{tenant.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            Move-in: {new Date(tenant.move_in_date).toLocaleDateString()}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Stack spacing={0.5}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                          <Phone size={14} color="#818cf8" />
-                          <Typography variant="caption">{tenant.phone_number}</Typography>
-                        </Box>
-                        {tenant.email && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary' }}>
-                            <Mail size={14} color="#818cf8" />
-                            <Typography variant="caption">{tenant.email}</Typography>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem' }}>{tenant.name}</Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
+                            <Home size={10} />
+                            <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>{tenant.unit_number}</Typography>
+                            <Typography variant="caption" sx={{ mx: 0.5 }}>•</Typography>
+                            <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>₹{tenant.monthly_rent.toLocaleString()}</Typography>
                           </Box>
-                        )}
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Home size={16} style={{ color: '#c084fc' }} />
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {tenant.properties?.name || 'Unknown Property'}
-                        </Typography>
-                        <Chip label={tenant.unit_number} size="small" variant="outlined" sx={{ height: 20, fontSize: '0.65rem', fontWeight: 700 }} />
+                        </Box>
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        ₹{tenant.monthly_rent.toLocaleString()}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={statusInfo.label} 
-                        size="small"
-                        variant="outlined"
-                        sx={{ 
-                          fontWeight: 800, 
-                          fontSize: '0.65rem',
-                          bgcolor: alpha(statusInfo.color, 0.1),
-                          color: statusInfo.color,
-                          border: 'none'
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, tenant.id)}>
-                        <MoreHorizontal size={18} />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-              {tenants.length === 0 && (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+                        <IconButton size="small" onClick={(e) => handleMenuOpen(e, tenant.id)}>
+                          <MoreHorizontal size={14} />
+                        </IconButton>
+                        <Chip 
+                          label={statusInfo.label} 
+                          size="small"
+                          sx={{ 
+                            height: 16, 
+                            fontSize: '0.55rem', 
+                            fontWeight: 800, 
+                            bgcolor: alpha(statusInfo.color, 0.1), 
+                            color: statusInfo.color,
+                            border: 'none'
+                          }} 
+                        />
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </Stack>
+
+          {/* Desktop View: Table */}
+          <TableContainer component={Card} sx={{ display: { xs: 'none', md: 'block' } }}>
+            <Table sx={{ minWidth: 650 }}>
+              <TableHead sx={{ bgcolor: alpha('#fff', 0.02) }}>
                 <TableRow>
-                  <TableCell colSpan={6} sx={{ textAlign: 'center', py: 10 }}>
-                    <Typography color="text.secondary">No tenants found. Click "Add Tenant" to get started.</Typography>
-                  </TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Tenant</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Contact Info</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Property / Unit</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Monthly Rent</TableCell>
+                  <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Status</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Actions</TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {tenants.map((tenant) => {
+                  const statusInfo = getStatusColor(tenant.is_active ? 'Active' : 'Inactive');
+                  return (
+                    <TableRow key={tenant.id} sx={{ '&:hover': { bgcolor: alpha('#fff', 0.01) } }}>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Avatar sx={{ bgcolor: alpha('#6366f1', 0.1), color: 'primary.main', fontWeight: 700, width: 32, height: 32, fontSize: '0.85rem' }}>
+                            {tenant.name.split(' ').map((n: string) => n[0]).join('')}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 700, fontSize: '0.85rem' }}>{tenant.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Move-in: {new Date(tenant.move_in_date).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Stack spacing={0.25}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
+                            <Phone size={12} color="#818cf8" />
+                            <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>{tenant.phone_number}</Typography>
+                          </Box>
+                          {tenant.email && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
+                              <Mail size={12} color="#818cf8" />
+                              <Typography variant="caption" sx={{ fontSize: '0.75rem' }}>{tenant.email}</Typography>
+                            </Box>
+                          )}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Home size={14} style={{ color: '#c084fc' }} />
+                          <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
+                            {tenant.properties?.name || 'Unknown'}
+                          </Typography>
+                          <Chip label={tenant.unit_number} size="small" variant="outlined" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 700 }} />
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
+                          ₹{tenant.monthly_rent.toLocaleString()}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={statusInfo.label} 
+                          size="small"
+                          sx={{ 
+                            height: 18,
+                            fontWeight: 800, 
+                            fontSize: '0.6rem',
+                            bgcolor: alpha(statusInfo.color, 0.1),
+                            color: statusInfo.color,
+                            border: 'none'
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton size="small" onClick={(e) => handleMenuOpen(e, tenant.id)}>
+                          <MoreHorizontal size={16} />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
       )}
 
       <Menu
