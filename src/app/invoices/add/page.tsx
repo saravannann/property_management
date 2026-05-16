@@ -205,12 +205,13 @@ export default function AddInvoicePage() {
       const tenant = tenants.find(t => t.id === formData.tenant_id);
       
       const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
+      const { billing_month, ...insertData } = formData;
 
       const { error } = await supabase
         .from('invoices')
         .insert([{
-          ...formData,
-          billing_date: formData.billing_month,
+          ...insertData,
+          billing_date: billing_month,
           rent_amount: Number(prorationDetails.proratedAmount),
           property_id: tenant.property_id,
           invoice_number: invoiceNumber,
