@@ -14,7 +14,7 @@ import {
   alpha,
   useTheme
 } from '@mui/material';
-import { Save, X, User, Phone, Mail, Building2, Hash, CreditCard } from "lucide-react";
+import { Save, X, User, Phone, Mail, Building2, Hash, CreditCard, FileText, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { supabase } from '@/lib/supabase';
 
@@ -26,6 +26,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
   const [saving, setSaving] = useState(false);
   const [properties, setProperties] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
+  const [agreementFile, setAgreementFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -39,6 +40,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
     move_out_date: '',
     agreement_start_date: '',
     agreement_end_date: '',
+    agreement_url: '',
     is_active: true
   });
 
@@ -71,6 +73,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
             move_out_date: tenant.move_out_date || '',
             agreement_start_date: tenant.agreement_start_date || '',
             agreement_end_date: tenant.agreement_end_date || '',
+            agreement_url: tenant.agreement_url || '',
             is_active: tenant.is_active ?? true
           });
           
@@ -115,6 +118,23 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
     e.preventDefault();
     try {
       setSaving(true);
+
+      let agreementUrl = formData.agreement_url;
+
+      // Upload new agreement if provided
+      if (agreementFile) {
+        const fileExt = agreementFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${formData.property_id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('tenant-agreements')
+          .upload(filePath, agreementFile);
+
+        if (uploadError) throw uploadError;
+        agreementUrl = filePath;
+      }
+
       const { error } = await supabase
         .from('tenants')
         .update({
@@ -129,15 +149,16 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
           move_out_date: formData.move_out_date || null,
           agreement_start_date: formData.agreement_start_date || null,
           agreement_end_date: formData.agreement_end_date || null,
+          agreement_url: agreementUrl,
           is_active: formData.is_active
         })
         .eq('id', resolvedParams.id);
 
       if (error) throw error;
       router.push('/tenants');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating tenant:', error);
-      alert('Failed to update tenant');
+      alert(error.message || 'Failed to update tenant');
     } finally {
       setSaving(false);
     }
@@ -332,8 +353,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                       helperText="Leave empty if tenant is currently active"
                     />
                   </Grid>
-                  
-                  {/* Legal Agreement Section */}
+                                 {/* Legal Agreement Section */}
                   <Grid size={{ xs: 12 }}>
                     <Box sx={{ mt: 2, mb: 1 }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -369,6 +389,68 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                       }}
                     />
                   </Grid>
+
+                  {/* Agreement Document Management */}
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 1, mt: 2, mb: 1 }}>
+                      Lease Agreement Document
+                    </Typography>
+                    
+                    {formData.agreement_url && !agreementFile && (
+                      <Box sx={{ 
+                        p: 2, 
+                        bgcolor: alpha(theme.palette.success.main, 0.05), 
+                        border: '1px solid', 
+                        borderColor: alpha(theme.palette.success.main, 0.2),
+                        borderRadius: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 2
+                      }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <FileText size={20} color={theme.palette.success.main} />
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>Current Agreement Uploaded</Typography>
+                        </Box>
+                        <Button 
+                          size="small" 
+                          startIcon={<ExternalLink size={14} />}
+                          onClick={() => {
+                            const { data } = supabase.storage.from('tenant-agreements').getPublicUrl(formData.agreement_url);
+                            window.open(data.publicUrl, '_blank');
+                          }}
+                        >
+                          View
+                        </Button>
+                      </Box>
+                    )}
+
+                    <Box sx={{ p: 3, border: '2px dashed', borderColor: agreementFile ? 'primary.main' : 'rgba(255, 255, 255, 0.1)', borderRadius: 2, textAlign: 'center' }}>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        id="agreement-edit-upload"
+                        style={{ display: 'none' }}
+                        onChange={(e) => setAgreementFile(e.target.files?.[0] || null)}
+                      />
+                      <label htmlFor="agreement-edit-upload">
+                        <Stack spacing={1} sx={{ alignItems: 'center', cursor: 'pointer' }}>
+                          <FileText size={32} color={agreementFile ? theme.palette.primary.main : theme.palette.text.secondary} />
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {agreementFile ? agreementFile.name : formData.agreement_url ? 'Replace Current Agreement (PDF)' : 'Upload Lease Agreement (PDF)'}
+                          </Typography>
+                          {agreementFile && (
+                            <Typography variant="caption" color="text.secondary">
+                              {(agreementFile.size / 1024 / 1024).toFixed(2)} MB
+                            </Typography>
+                          )}
+                          <Button size="small" component="span" variant="outlined" sx={{ mt: 1 }}>
+                            {agreementFile ? 'Change Selection' : 'Select PDF'}
+                          </Button>
+                        </Stack>
+                      </label>
+                    </Box>
+                  </Grid>
                   
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
@@ -395,10 +477,10 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
               size="large"
               type="submit"
               disabled={saving}
-              startIcon={saving ? <CircularProgress size={20} /> : <Save size={20} />}
+              startIcon={saving ? <CircularProgress size={20} color="inherit" /> : <Save size={20} />}
               sx={{ py: 2, fontWeight: 800, fontSize: '1rem' }}
             >
-              {saving ? 'Saving Changes...' : 'Save Tenant Updates'}
+              {saving ? 'Updating Tenant...' : 'Save Tenant Updates'}
             </Button>
           </Grid>
         </Grid>

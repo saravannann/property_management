@@ -26,7 +26,8 @@ import {
   Calendar,
   IndianRupee,
   Save,
-  Building2
+  Building2,
+  FileText
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -40,6 +41,7 @@ export default function AddTenantPage() {
   const [units, setUnits] = useState<any[]>([]);
   const [fetchingProps, setFetchingProps] = useState(true);
   const [fetchingUnits, setFetchingUnits] = useState(false);
+  const [agreementFile, setAgreementFile] = useState<File | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -118,6 +120,32 @@ export default function AddTenantPage() {
 
     try {
       setLoading(true);
+      
+      let agreementUrl = null;
+
+      // 1. Upload Agreement if exists
+      if (agreementFile) {
+        const fileExt = agreementFile.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${formData.property_id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('tenant-agreements')
+          .upload(filePath, agreementFile);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          // Check if bucket exists error
+          if (uploadError.message.includes('bucket not found')) {
+            throw new Error('Storage bucket "tenant-agreements" not found. Please create it in Supabase Dashboard.');
+          }
+          throw uploadError;
+        }
+        
+        agreementUrl = filePath;
+      }
+
+      // 2. Insert Tenant
       const { error } = await supabase
         .from('tenants')
         .insert([{
@@ -126,6 +154,7 @@ export default function AddTenantPage() {
           security_deposit: parseFloat(formData.security_deposit || '0'),
           agreement_start_date: formData.agreement_start_date || null,
           agreement_end_date: formData.agreement_end_date || null,
+          agreement_url: agreementUrl,
           is_active: true
         }]);
 
@@ -291,6 +320,33 @@ export default function AddTenantPage() {
                         htmlInput: { placeholder: '' }
                       }}
                     />
+                  </Grid>
+
+                  {/* Agreement Document Upload */}
+                  <Grid size={{ xs: 12 }}>
+                    <Box sx={{ mt: 2, p: 3, border: '2px dashed', borderColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 2, textAlign: 'center' }}>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        id="agreement-upload"
+                        style={{ display: 'none' }}
+                        onChange={(e) => setAgreementFile(e.target.files?.[0] || null)}
+                      />
+                      <label htmlFor="agreement-upload">
+                        <Stack spacing={1} sx={{ alignItems: 'center', cursor: 'pointer' }}>
+                          <FileText size={32} color={agreementFile ? theme.palette.success.main : theme.palette.text.secondary} />
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {agreementFile ? agreementFile.name : 'Upload Signed Agreement (PDF)'}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {agreementFile ? `${(agreementFile.size / 1024 / 1024).toFixed(2)} MB` : 'Max size 5MB'}
+                          </Typography>
+                          <Button size="small" component="span" variant="outlined" sx={{ mt: 1 }}>
+                            {agreementFile ? 'Change File' : 'Select PDF'}
+                          </Button>
+                        </Stack>
+                      </label>
+                    </Box>
                   </Grid>
                 </Grid>
               </CardContent>

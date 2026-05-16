@@ -36,7 +36,9 @@ import {
   ShieldCheck, 
   MoreHorizontal,
   Edit,
-  Trash2
+  Trash2,
+  FileText,
+  ExternalLink
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -214,9 +216,23 @@ function TenantsContent() {
                         </Box>
                       </Box>
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
-                        <IconButton size="small" onClick={(e) => handleMenuOpen(e, tenant.id)}>
-                          <MoreHorizontal size={14} />
-                        </IconButton>
+                        <Stack direction="row" spacing={0.5}>
+                          {tenant.agreement_url && (
+                            <IconButton 
+                              size="small" 
+                              sx={{ p: 0.5, color: 'primary.main' }}
+                              onClick={() => {
+                                const { data } = supabase.storage.from('tenant-agreements').getPublicUrl(tenant.agreement_url);
+                                window.open(data.publicUrl, '_blank');
+                              }}
+                            >
+                              <FileText size={14} />
+                            </IconButton>
+                          )}
+                          <IconButton size="small" onClick={(e) => handleMenuOpen(e, tenant.id)}>
+                            <MoreHorizontal size={14} />
+                          </IconButton>
+                        </Stack>
                         <Chip 
                           label={statusInfo.label} 
                           size="small"
@@ -311,9 +327,24 @@ function TenantsContent() {
                         />
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton size="small" onClick={(e) => handleMenuOpen(e, tenant.id)}>
-                          <MoreHorizontal size={16} />
-                        </IconButton>
+                        <Stack spacing={1} sx={{ direction: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
+                          {tenant.agreement_url && (
+                            <IconButton 
+                              size="small" 
+                              color="primary"
+                              onClick={() => {
+                                const { data } = supabase.storage.from('tenant-agreements').getPublicUrl(tenant.agreement_url);
+                                window.open(data.publicUrl, '_blank');
+                              }}
+                              title="View Agreement"
+                            >
+                              <FileText size={16} />
+                            </IconButton>
+                          )}
+                          <IconButton size="small" onClick={(e) => handleMenuOpen(e, tenant.id)}>
+                            <MoreHorizontal size={16} />
+                          </IconButton>
+                        </Stack>
                       </TableCell>
                     </TableRow>
                   );
