@@ -43,8 +43,8 @@ export default function AddInvoicePage() {
 
   const [formData, setFormData] = useState({
     tenant_id: '',
-    billing_date: new Date().toISOString().split('T')[0],
-    due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    billing_month: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    due_date: new Date(new Date().getFullYear(), new Date().getMonth(), 15).toISOString().split('T')[0],
     billing_period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     billing_period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
     rent_amount: 0,
@@ -56,6 +56,25 @@ export default function AddInvoicePage() {
     previous_balance: 0,
     description: ''
   });
+
+  // When billing month changes, update due date and period
+  const handleMonthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDate = new Date(e.target.value);
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    
+    const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
+    const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
+    const dueDate = new Date(year, month, 15).toISOString().split('T')[0];
+
+    setFormData(prev => ({
+      ...prev,
+      billing_month: firstDay,
+      due_date: dueDate,
+      billing_period_start: firstDay,
+      billing_period_end: lastDay
+    }));
+  };
 
   useEffect(() => {
     const fetchTenants = async () => {
@@ -191,6 +210,7 @@ export default function AddInvoicePage() {
         .from('invoices')
         .insert([{
           ...formData,
+          billing_date: formData.billing_month,
           rent_amount: Number(prorationDetails.proratedAmount),
           property_id: tenant.property_id,
           invoice_number: invoiceNumber,
@@ -248,10 +268,29 @@ export default function AddInvoicePage() {
                     </TextField>
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField fullWidth type="date" label="Billing Date" name="billing_date" value={formData.billing_date} onChange={handleChange} required slotProps={{ inputLabel: { shrink: true } }} />
+                    <TextField 
+                      fullWidth 
+                      type="month" 
+                      label="Billing Month" 
+                      name="billing_month" 
+                      value={formData.billing_month.slice(0, 7)} 
+                      onChange={handleMonthChange} 
+                      required 
+                      slotProps={{ inputLabel: { shrink: true } }} 
+                    />
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
-                    <TextField fullWidth type="date" label="Due Date" name="due_date" value={formData.due_date} onChange={handleChange} required slotProps={{ inputLabel: { shrink: true } }} />
+                    <TextField 
+                      fullWidth 
+                      type="date" 
+                      label="Due Date (Fixed to 15th)" 
+                      name="due_date" 
+                      value={formData.due_date} 
+                      slotProps={{ 
+                        input: { readOnly: true },
+                        inputLabel: { shrink: true } 
+                      }} 
+                    />
                   </Grid>
                   
                   <Grid size={{ xs: 12 }}>
