@@ -205,18 +205,27 @@ export default function AddInvoicePage() {
       const tenant = tenants.find(t => t.id === formData.tenant_id);
       
       const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
-      const { billing_month, ...insertData } = formData;
 
       const { error } = await supabase
         .from('invoices')
         .insert([{
-          ...insertData,
-          billing_date: billing_month,
-          rent_amount: Number(prorationDetails.proratedAmount),
+          tenant_id: formData.tenant_id,
           property_id: tenant.property_id,
           invoice_number: invoiceNumber,
+          billing_date: formData.billing_month,
+          due_date: formData.due_date,
+          billing_period_start: formData.billing_period_start,
+          billing_period_end: formData.billing_period_end,
+          rent_amount: Number(prorationDetails.proratedAmount),
+          water_charges: Number(formData.water_charges),
+          prev_electricity_reading: Number(formData.prev_electricity_reading),
+          curr_electricity_reading: Number(formData.curr_electricity_reading),
+          electricity_rate: Number(formData.electricity_rate),
+          misc_charges: Number(formData.misc_charges),
+          previous_balance: Number(formData.previous_balance),
           amount: totalAmount,
-          status: 'pending'
+          status: 'pending',
+          description: formData.description
         }]);
 
       if (error) throw error;
