@@ -56,10 +56,26 @@ CREATE TABLE invoices (
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
   property_id UUID REFERENCES properties(id) ON DELETE CASCADE,
   invoice_number TEXT NOT NULL UNIQUE,
-  amount DECIMAL(12, 2) NOT NULL,
+  
+  -- Billing Components
+  rent_amount DECIMAL(12, 2) NOT NULL,
+  water_charges DECIMAL(12, 2) DEFAULT 0,
+  prev_electricity_reading DECIMAL(12, 2) DEFAULT 0,
+  curr_electricity_reading DECIMAL(12, 2) DEFAULT 0,
+  electricity_rate DECIMAL(12, 2) DEFAULT 0,
+  misc_charges DECIMAL(12, 2) DEFAULT 0,
+  previous_balance DECIMAL(12, 2) DEFAULT 0,
+  
+  -- Billing Period
+  billing_period_start DATE,
+  billing_period_end DATE,
+  
+  -- Totals
+  amount DECIMAL(12, 2) NOT NULL, -- Total amount due
   billing_date DATE NOT NULL,
   due_date DATE NOT NULL,
   status TEXT DEFAULT 'pending', -- pending, paid, overdue
+  description TEXT,
   pdf_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -75,14 +91,20 @@ ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own properties" ON properties
   FOR ALL USING (auth.uid() = owner_id);
 
--- Tenants: Users can only see tenants of their own properties
-CREATE POLICY "Users can manage tenants of their properties" ON tenants
+-- Tenants: Owners and assigned managers can manage tenants
+DROP POLICY IF EXISTS "Users can manage tenants of their properties" ON tenants;
+CREATE POLICY "Users and managers can manage tenants" ON tenants
   FOR ALL USING (
-    property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid())
+    property_id IN (
+      SELECT id FROM properties 
+      WHERE owner_id = auth.uid() 
+      OR auth.uid() = ANY(assigned_managers)
+    )
   );
 
--- Invoices: Users and assigned managers can see invoices related to their properties
+-- Invoices: Owners and assigned managers can manage invoices
 DROP POLICY IF EXISTS "Users can manage invoices of their properties" ON invoices;
+DROP POLICY IF EXISTS "Users and managers can manage invoices" ON invoices;
 CREATE POLICY "Users and managers can manage invoices" ON invoices
   FOR ALL USING (
     property_id IN (
@@ -103,3 +125,32 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER update_properties_updated_at BEFORE UPDATE ON properties FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_tenants_updated_at BEFORE UPDATE ON tenants FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+-- 7. Storage Policies for tenant-agreements bucket
+-- Note: Run these in Supabase SQL Editor after creating the bucket
+
+-- Allow Owners and Managers to upload files
+CREATE POLICY "Managers can upload agreements"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'tenant-agreements' AND
+  (storage.foldername(name))[1] IN (
+    SELECT id::text FROM properties 
+    WHERE owner_id = auth.uid() 
+    OR auth.uid() = ANY(assigned_managers)
+  )
+);
+
+-- Allow Owners and Managers to view files
+CREATE POLICY "Managers can view agreements"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+  bucket_id = 'tenant-agreements' AND
+  (storage.foldername(name))[1] IN (
+    SELECT id::text FROM properties 
+    WHERE owner_id = auth.uid() 
+    OR auth.uid() = ANY(assigned_managers)
+  )
+);

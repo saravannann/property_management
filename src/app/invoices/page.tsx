@@ -126,6 +126,8 @@ export default function InvoicesPage() {
           <Button 
             variant="contained" 
             startIcon={<Plus size={18} />}
+            component={Link}
+            href="/invoices/add"
           >
             Create Invoice
           </Button>
