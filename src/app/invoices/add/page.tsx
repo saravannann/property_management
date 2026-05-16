@@ -81,7 +81,7 @@ export default function AddInvoicePage() {
       try {
         const { data, error } = await supabase
           .from('tenants')
-          .select('id, name, property_id, monthly_rent, electricity_rate, water_charges')
+          .select('id, name, property_id, monthly_rent, electricity_rate, water_charges, properties(name)')
           .eq('is_active', true)
           .order('name');
         if (error) throw error;
@@ -203,8 +203,26 @@ export default function AddInvoicePage() {
     try {
       setLoading(true);
       const tenant = tenants.find(t => t.id === formData.tenant_id);
+      if (!tenant) throw new Error('Tenant not found');
+
+      // 1. Generate Property Shortcode (e.g. EMER)
+      const propName = tenant.properties?.name || 'PROP';
+      const propCode = propName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase().padEnd(4, 'X');
       
-      const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
+      // 2. Generate YearMonth (YYYYMM)
+      const yyyymm = formData.billing_month.replace(/-/g, '').slice(0, 6);
+
+      // 3. Get next sequence number (SS) for this property and month
+      const { count } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('property_id', tenant.property_id)
+        .eq('billing_date', formData.billing_month);
+
+      const sequence = String((count || 0) + 1).padStart(2, '0');
+      
+      // 4. Final Format: INV-PROP-YYYYMM-SS
+      const invoiceNumber = `INV-${propCode}-${yyyymm}-${sequence}`;
 
       const { error } = await supabase
         .from('invoices')
