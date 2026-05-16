@@ -237,7 +237,9 @@ export default function InvoicesPage() {
                   />
                 </TableCell>
                 <TableCell align="right">
-                  <IconButton size="small" title="View PDF"><Eye size={18} /></IconButton>
+                  <IconButton component={Link} href={`/invoices/${invoice.id}`} size="small" title="View Details">
+                    <Eye size={18} />
+                  </IconButton>
                   <IconButton size="small" title="Download"><Download size={18} /></IconButton>
                 </TableCell>
               </TableRow>
