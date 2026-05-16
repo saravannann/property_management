@@ -30,7 +30,8 @@ import {
   Eye, 
   Clock, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  History
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from '@/lib/supabase';
@@ -95,6 +96,7 @@ export default function InvoicesPage() {
       case 'paid': return 'success';
       case 'pending': return 'warning';
       case 'overdue': return 'error';
+      case 'elapsed': return 'info';
       default: return 'default';
     }
   };
@@ -104,6 +106,7 @@ export default function InvoicesPage() {
       case 'paid': return <CheckCircle2 size={14} />;
       case 'pending': return <Clock size={14} />;
       case 'overdue': return <AlertCircle size={14} />;
+      case 'elapsed': return <History size={14} />;
       default: return undefined;
     }
   };

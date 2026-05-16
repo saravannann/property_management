@@ -248,6 +248,16 @@ export default function AddInvoicePage() {
 
       if (error) throw error;
       
+      // If we are rolling over a previous balance, mark older open invoices as 'elapsed'
+      if (Number(formData.previous_balance) > 0) {
+        await supabase
+          .from('invoices')
+          .update({ status: 'elapsed' })
+          .eq('tenant_id', formData.tenant_id)
+          .in('status', ['pending', 'overdue'])
+          .neq('invoice_number', invoiceNumber);
+      }
+      
       router.push('/invoices');
       router.refresh();
     } catch (error: any) {
