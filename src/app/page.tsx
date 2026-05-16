@@ -215,23 +215,19 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ animation: 'fadeIn 0.5s ease' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 3, md: 5 } }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
-            Dashboard Overview
+          <Typography variant="h4" sx={{ 
+            fontWeight: 800, 
+            letterSpacing: -0.5,
+            fontSize: { xs: '1.75rem', md: '2.5rem' }
+          }}>
+            Dashboard
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Insights and management for your property portfolio.
+          <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+            Welcome back! Here's what's happening with your properties.
           </Typography>
         </Box>
-        <Link href="/properties/add" style={{ textDecoration: 'none' }}>
-          <Button 
-            variant="contained" 
-            startIcon={<Plus size={18} />}
-          >
-            Add Property
-          </Button>
-        </Link>
       </Box>
 
       {/* Stats Grid */}
