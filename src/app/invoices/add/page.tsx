@@ -45,9 +45,9 @@ export default function AddInvoicePage() {
     property_id: '',
     tenant_id: '',
     billing_month: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    due_date: new Date(new Date().getFullYear(), new Date().getMonth(), 15).toISOString().split('T')[0],
-    billing_period_start: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1).toISOString().split('T')[0],
-    billing_period_end: new Date(new Date().getFullYear(), new Date().getMonth(), 0).toISOString().split('T')[0],
+    due_date: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 15).toISOString().split('T')[0],
+    billing_period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    billing_period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
     rent_amount: '' as string | number,
     water_charges: '' as string | number,
     prev_electricity_reading: '' as string | number,
@@ -66,18 +66,18 @@ export default function AddInvoicePage() {
     
     const billingMonthStart = new Date(year, month, 1).toISOString().split('T')[0];
     
-    // Period should be previous month
-    const firstDayPrev = new Date(year, month - 1, 1).toISOString().split('T')[0];
-    const lastDayPrev = new Date(year, month, 0).toISOString().split('T')[0];
+    // Period should be the same month
+    const periodEnd = new Date(year, month + 1, 0).toISOString().split('T')[0];
     
-    const dueDate = new Date(year, month, 15).toISOString().split('T')[0];
+    // Due Date is 15th of the next month
+    const dueDate = new Date(year, month + 1, 15).toISOString().split('T')[0];
 
     setFormData(prev => ({
       ...prev,
       billing_month: billingMonthStart,
       due_date: dueDate,
-      billing_period_start: firstDayPrev,
-      billing_period_end: lastDayPrev
+      billing_period_start: billingMonthStart,
+      billing_period_end: periodEnd
     }));
   };
 
