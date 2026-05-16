@@ -81,7 +81,7 @@ export default function AddInvoicePage() {
       try {
         const { data, error } = await supabase
           .from('tenants')
-          .select('id, name, property_id, monthly_rent, electricity_rate, water_charges, properties(name)')
+          .select('id, name, property_id, unit_number, monthly_rent, electricity_rate, water_charges, properties(name)')
           .eq('is_active', true)
           .order('name');
         if (error) throw error;
@@ -205,9 +205,14 @@ export default function AddInvoicePage() {
       const tenant = tenants.find(t => t.id === formData.tenant_id);
       if (!tenant) throw new Error('Tenant not found');
 
-      // 1. Generate Property Shortcode (e.g. EMER)
-      const propName = tenant.properties?.name || 'PROP';
-      const propCode = propName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase().padEnd(4, 'X');
+      // 1. Generate Property Shortcode from Unit Prefix (e.g. EMA from EMA-01)
+      const unitNum = tenant.unit_number || '';
+      let propCode = 'PROP';
+      if (unitNum.includes('-')) {
+        propCode = unitNum.split('-')[0].toUpperCase();
+      } else {
+        propCode = unitNum.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'PROP';
+      }
       
       // 2. Generate YearMonth (YYYYMM)
       const yyyymm = formData.billing_month.replace(/-/g, '').slice(0, 6);
