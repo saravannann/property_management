@@ -43,13 +43,18 @@ const theme = createTheme({
           borderRadius: 8,
           padding: '8px 16px',
         },
-        containedPrimary: {
-          boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.39)',
-          '&:hover': {
-            boxShadow: '0 6px 20px rgba(99, 102, 241, 0.23)',
+      },
+      variants: [
+        {
+          props: { variant: 'contained', color: 'primary' },
+          style: {
+            boxShadow: '0 4px 14px 0 rgba(99, 102, 241, 0.39)',
+            '&:hover': {
+              boxShadow: '0 6px 20px rgba(99, 102, 241, 0.23)',
+            },
           },
         },
-      },
+      ],
     },
     MuiCard: {
       styleOverrides: {

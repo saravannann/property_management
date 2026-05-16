@@ -92,7 +92,7 @@ export default function Dashboard() {
       {/* Stats Grid */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {stats.map((stat, i) => (
-          <Grid item xs={12} sm={6} lg={3} key={i}>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={i}>
             <Card sx={{ height: '100%' }}>
               <CardContent sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
@@ -131,7 +131,7 @@ export default function Dashboard() {
 
       <Grid container spacing={4}>
         {/* Recent Activity */}
-        <Grid item xs={12} lg={8}>
+        <Grid size={{ xs: 12, lg: 8 }}>
           <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
@@ -173,7 +173,7 @@ export default function Dashboard() {
         </Grid>
 
         {/* Quick Insights */}
-        <Grid item xs={12} lg={4}>
+        <Grid size={{ xs: 12, lg: 4 }}>
           <Stack spacing={3}>
             <Card sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05), border: '1px dashed', borderColor: 'primary.main' }}>
               <CardContent sx={{ p: 3 }}>

@@ -164,7 +164,7 @@ export default function TenantsPage() {
                     label={tenant.status} 
                     size="small"
                     color={tenant.status === 'Active' ? 'success' : 'warning'}
-                    variant="soft"
+                    variant="outlined"
                     sx={{ 
                       fontWeight: 800, 
                       fontSize: '0.65rem',
@@ -180,7 +180,7 @@ export default function TenantsPage() {
                 </TableCell>
               </TableRow>
             ))}
-          </tbody >
+          </TableBody>
         </Table>
       </TableContainer>
     </Box>

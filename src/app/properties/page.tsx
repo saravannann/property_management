@@ -103,7 +103,7 @@ export default function PropertiesPage() {
 
       <Grid container spacing={4}>
         {properties.map((property) => (
-          <Grid item xs={12} sm={6} lg={4} key={property.id}>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={property.id}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
               <CardMedia
                 component="img"
@@ -174,7 +174,7 @@ export default function PropertiesPage() {
         ))}
 
         {/* Add Property Card */}
-        <Grid item xs={12} sm={6} lg={4}>
+        <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <Card 
             component={Link} 
             href="/properties/add"

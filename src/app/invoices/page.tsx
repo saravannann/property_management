@@ -76,7 +76,7 @@ export default function InvoicesPage() {
       case 'Paid': return <CheckCircle2 size={14} />;
       case 'Pending': return <Clock size={14} />;
       case 'Overdue': return <AlertCircle size={14} />;
-      default: return null;
+      default: return undefined;
     }
   };
 
@@ -111,7 +111,7 @@ export default function InvoicesPage() {
           { label: "Pending Amount", value: "₹2,15,000", color: '#f59e0b' },
           { label: "Overdue Amount", value: "₹85,000", color: '#ef4444' }
         ].map((stat, i) => (
-          <Grid item xs={12} md={4} key={i}>
+          <Grid size={{ xs: 12, md: 4 }} key={i}>
             <Card sx={{ borderLeft: `4px solid ${stat.color}` }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: 1 }}>
@@ -172,7 +172,7 @@ export default function InvoicesPage() {
                     icon={getStatusIcon(invoice.status)}
                     size="small"
                     color={getStatusColor(invoice.status) as any}
-                    variant="soft"
+                    variant="outlined"
                     sx={{ 
                       fontWeight: 800, 
                       fontSize: '0.65rem',
