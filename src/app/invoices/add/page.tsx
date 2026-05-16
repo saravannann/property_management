@@ -205,14 +205,9 @@ export default function AddInvoicePage() {
       const tenant = tenants.find(t => t.id === formData.tenant_id);
       if (!tenant) throw new Error('Tenant not found');
 
-      // 1. Generate Property Shortcode from Unit Prefix (e.g. EMA from EMA-01)
-      const unitNum = tenant.unit_number || '';
-      let propCode = 'PROP';
-      if (unitNum.includes('-')) {
-        propCode = unitNum.split('-')[0].toUpperCase();
-      } else {
-        propCode = unitNum.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase() || 'PROP';
-      }
+      // 1. Use full Unit Number as Property/Unit Identifier (e.g. MEA05 or EMA01)
+      const unitNum = tenant.unit_number || 'PROP';
+      const propCode = unitNum.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
       
       // 2. Generate YearMonth (YYYYMM)
       const yyyymm = formData.billing_month.replace(/-/g, '').slice(0, 6);
