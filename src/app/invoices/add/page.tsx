@@ -47,13 +47,13 @@ export default function AddInvoicePage() {
     due_date: new Date(new Date().getFullYear(), new Date().getMonth(), 15).toISOString().split('T')[0],
     billing_period_start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
     billing_period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0],
-    rent_amount: 0,
-    water_charges: 0,
-    prev_electricity_reading: 0,
-    curr_electricity_reading: 0,
-    electricity_rate: 10, // Default rate
-    misc_charges: 0,
-    previous_balance: 0,
+    rent_amount: '' as string | number,
+    water_charges: '' as string | number,
+    prev_electricity_reading: '' as string | number,
+    curr_electricity_reading: '' as string | number,
+    electricity_rate: '' as string | number,
+    misc_charges: '' as string | number,
+    previous_balance: '' as string | number,
     description: ''
   });
 
@@ -123,11 +123,11 @@ export default function AddInvoicePage() {
 
         setFormData(prev => ({
           ...prev,
-          rent_amount: tenant?.monthly_rent || 0,
-          electricity_rate: tenant?.electricity_rate || 10,
-          water_charges: tenant?.water_charges || 0,
-          prev_electricity_reading: lastInv?.curr_electricity_reading || 0,
-          previous_balance: totalUnpaid
+          rent_amount: tenant?.monthly_rent || '',
+          electricity_rate: tenant?.electricity_rate || '',
+          water_charges: tenant?.water_charges || '',
+          prev_electricity_reading: lastInv?.curr_electricity_reading || '',
+          previous_balance: totalUnpaid || ''
         }));
         setLastInvoice(lastInv);
 
@@ -136,9 +136,11 @@ export default function AddInvoicePage() {
         // If no last invoice, just set rent
         setFormData(prev => ({
           ...prev,
-          rent_amount: tenant?.monthly_rent || 0,
-          prev_electricity_reading: 0,
-          previous_balance: 0
+          rent_amount: tenant?.monthly_rent || '',
+          electricity_rate: tenant?.electricity_rate || '',
+          water_charges: tenant?.water_charges || '',
+          prev_electricity_reading: '',
+          previous_balance: ''
         }));
       }
     };
@@ -171,12 +173,12 @@ export default function AddInvoicePage() {
   }, [formData.billing_period_start, formData.billing_period_end, formData.rent_amount]);
 
   const electricityUsage = useMemo(() => {
-    const usage = formData.curr_electricity_reading - formData.prev_electricity_reading;
+    const usage = Number(formData.curr_electricity_reading) - Number(formData.prev_electricity_reading);
     return usage > 0 ? usage : 0;
   }, [formData.curr_electricity_reading, formData.prev_electricity_reading]);
 
   const electricityAmount = useMemo(() => {
-    return electricityUsage * formData.electricity_rate;
+    return electricityUsage * Number(formData.electricity_rate);
   }, [electricityUsage, formData.electricity_rate]);
 
   const totalAmount = useMemo(() => {
