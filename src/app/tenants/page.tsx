@@ -21,7 +21,8 @@ import {
   CircularProgress,
   TextField,
   InputAdornment,
-  MenuItem
+  MenuItem,
+  Menu
 } from '@mui/material';
 import { 
   Users, 
@@ -32,7 +33,9 @@ import {
   Mail, 
   Home, 
   ShieldCheck, 
-  MoreHorizontal 
+  MoreHorizontal,
+  Edit,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -40,12 +43,48 @@ import { supabase } from '@/lib/supabase';
 
 function TenantsContent() {
   const theme = useTheme();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const propertyId = searchParams.get('propertyId');
   
   const [tenants, setTenants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, id: string) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedTenantId(id);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedTenantId(null);
+  };
+
+  const handleDeleteTenant = async () => {
+    if (!selectedTenantId) return;
+    if (!confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) return;
+
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('tenants')
+        .delete()
+        .eq('id', selectedTenantId);
+
+      if (error) throw error;
+      fetchTenants();
+      handleMenuClose();
+    } catch (error) {
+      console.error('Error deleting tenant:', error);
+      alert('Failed to delete tenant');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchTenants = async () => {
     try {
@@ -230,8 +269,9 @@ function TenantsContent() {
                       />
                     </TableCell>
                     <TableCell align="right">
-                      <IconButton size="small"><ShieldCheck size={18} /></IconButton>
-                      <IconButton size="small"><MoreHorizontal size={18} /></IconButton>
+                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, tenant.id)}>
+                        <MoreHorizontal size={18} />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 );
@@ -247,6 +287,41 @@ function TenantsContent() {
           </Table>
         </TableContainer>
       )}
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: '#1e1e1e',
+              border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              minWidth: 160,
+              backgroundImage: 'none'
+            }
+          }
+        }}
+      >
+        <MenuItem 
+          onClick={() => {
+            router.push(`/tenants/${selectedTenantId}/edit`);
+            handleMenuClose();
+          }}
+          sx={{ gap: 1.5, color: '#f8fafc', py: 1.5 }}
+        >
+          <Edit size={16} />
+          Edit Tenant
+        </MenuItem>
+        <MenuItem 
+          onClick={handleDeleteTenant}
+          sx={{ gap: 1.5, color: '#ef4444', py: 1.5 }}
+        >
+          <Trash2 size={16} />
+          Delete Tenant
+        </MenuItem>
+      </Menu>
     </Box>
   );
 }

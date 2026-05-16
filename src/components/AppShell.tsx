@@ -48,6 +48,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const isPublicPage = pathname === '/login' || pathname === '/setup-admin';
 
   const [userRole, setUserRole] = React.useState<string | null>(null);
+  const [userName, setUserName] = React.useState<string>('John Doe');
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
   React.useEffect(() => {
     const checkUser = async () => {
@@ -60,10 +70,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('role, full_name')
           .eq('id', session.user.id)
           .single();
-        setUserRole(profile?.role || 'manager');
+        
+        if (profile) {
+          setUserRole(profile.role || 'manager');
+          setUserName(profile.full_name || session.user.email?.split('@')[0] || 'User');
+        }
       }
     };
     checkUser();
@@ -231,10 +245,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   width: 36, 
                   height: 36,
                   cursor: 'pointer',
-                  boxShadow: theme.palette.mode === 'dark' ? '0 0 10px rgba(99, 102, 241, 0.3)' : 'none'
+                  boxShadow: theme.palette.mode === 'dark' ? '0 0 10px rgba(99, 102, 241, 0.3)' : 'none',
+                  fontSize: '0.875rem',
+                  fontWeight: 700
                 }}
               >
-                JD
+                {getInitials(userName)}
               </Avatar>
             </Box>
           </Toolbar>

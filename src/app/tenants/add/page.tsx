@@ -51,6 +51,8 @@ export default function AddTenantPage() {
     monthly_rent: '',
     security_deposit: '',
     move_in_date: new Date().toISOString().split('T')[0],
+    agreement_start_date: '',
+    agreement_end_date: '',
   });
 
   useEffect(() => {
@@ -122,6 +124,8 @@ export default function AddTenantPage() {
           ...formData,
           monthly_rent: parseFloat(formData.monthly_rent),
           security_deposit: parseFloat(formData.security_deposit || '0'),
+          agreement_start_date: formData.agreement_start_date || null,
+          agreement_end_date: formData.agreement_end_date || null,
           is_active: true
         }]);
 
@@ -131,7 +135,8 @@ export default function AddTenantPage() {
       router.refresh();
     } catch (error: any) {
       console.error('Error saving tenant:', error);
-      alert('Error saving tenant: ' + error.message);
+      const msg = error.message || error.details || 'Unknown database error';
+      alert('Error saving tenant: ' + msg);
     } finally {
       setLoading(false);
     }
@@ -253,7 +258,38 @@ export default function AddTenantPage() {
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField 
                       fullWidth type="date" label="Move-in Date" name="move_in_date" value={formData.move_in_date} onChange={handleChange} required 
-                      slotProps={{ input: { startAdornment: <InputAdornment position="start"><Calendar size={18} /></InputAdornment> } }}
+                      slotProps={{ 
+                        label: { shrink: true },
+                        input: { startAdornment: <InputAdornment position="start"><Calendar size={18} /></InputAdornment> },
+                        htmlInput: { placeholder: '' }
+                      }}
+                    />
+                  </Grid>
+                  
+                  {/* Agreement Section */}
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: 'primary.main', textTransform: 'uppercase', mb: 1, mt: 2 }}>
+                      Legal Agreement Period
+                    </Typography>
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField 
+                      fullWidth type="date" label="Agreement Start Date" name="agreement_start_date" value={formData.agreement_start_date} onChange={handleChange}
+                      slotProps={{ 
+                        label: { shrink: true },
+                        input: { startAdornment: <InputAdornment position="start"><Calendar size={18} /></InputAdornment> },
+                        htmlInput: { placeholder: '' }
+                      }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField 
+                      fullWidth type="date" label="Agreement End Date" name="agreement_end_date" value={formData.agreement_end_date} onChange={handleChange}
+                      slotProps={{ 
+                        label: { shrink: true },
+                        input: { startAdornment: <InputAdornment position="start"><Calendar size={18} /></InputAdornment> },
+                        htmlInput: { placeholder: '' }
+                      }}
                     />
                   </Grid>
                 </Grid>

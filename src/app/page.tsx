@@ -22,7 +22,9 @@ import {
   Clock, 
   Plus,
   ArrowRight,
-  Home
+  Home,
+  Percent,
+  Wallet
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from '@/lib/supabase';
@@ -34,9 +36,12 @@ export default function Dashboard() {
     propertyCount: 0,
     tenantCount: 0,
     totalRevenue: 0,
+    totalAdvance: 0,
     pendingInvoices: 0,
+    pendingAmount: 0,
     vacantApartments: 0,
     vacantCommercial: 0,
+    occupancyRate: 0,
     recentActivity: [] as any[]
   });
 
@@ -47,22 +52,41 @@ export default function Dashboard() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        // 1. Fetch Properties with their tenant counts
-        const { data: props } = await supabase
+        // 1. Fetch User Profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        // 2. Fetch Properties with their tenant counts
+        let query = supabase
           .from('properties')
-          .select('property_type, total_units, tenants:tenants(count)')
-          .eq('owner_id', user.id);
+          .select('id, name, property_type, total_units, created_at, tenants:tenants(count)');
+        
+        if (profile?.role !== 'admin') {
+          query = query.or(`owner_id.eq.${user.id},assigned_managers.cs.{${user.id}}`);
+        }
+
+        const { data: props, error: propsError } = await query;
+        if (propsError) throw propsError;
         
         const propertyCount = props?.length || 0;
+        const propertyIds = props?.map(p => p.id) || [];
         
         let vacantApartments = 0;
         let vacantCommercial = 0;
+        let tenantCount = 0;
+        let totalUnits = 0;
 
         props?.forEach(p => {
           const type = (p.property_type || '').toLowerCase();
           const total = Number(p.total_units) || 0;
           const occupied = p.tenants?.[0]?.count || 0;
           const vacant = Math.max(0, total - occupied);
+
+          totalUnits += total;
+          tenantCount += occupied;
 
           if (type.includes('apartment') || type.includes('villa')) {
             vacantApartments += vacant;
@@ -71,46 +95,58 @@ export default function Dashboard() {
           }
         });
 
-        // 2. Fetch Total Tenant Count
-        const { count: tenantCount } = await supabase
-          .from('tenants')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_active', true);
+        const occupancyRate = totalUnits > 0 ? Math.round((tenantCount / totalUnits) * 100) : 0;
 
-        // 3. Calculate Revenue
-        const { data: tenants } = await supabase
-          .from('tenants')
-          .select('monthly_rent')
-          .eq('is_active', true);
-        
-        const totalRevenue = tenants?.reduce((acc, t) => acc + Number(t.monthly_rent), 0) || 0;
+        // 3. Calculate Revenue & Advance (Only for properties visible to this user)
+        let totalRevenue = 0;
+        let totalAdvance = 0;
+        if (propertyIds.length > 0) {
+          const { data: activeTenants } = await supabase
+            .from('tenants')
+            .select('monthly_rent, security_deposit')
+            .eq('is_active', true)
+            .in('property_id', propertyIds);
+          
+          totalRevenue = activeTenants?.reduce((acc, t) => acc + Number(t.monthly_rent), 0) || 0;
+          totalAdvance = activeTenants?.reduce((acc, t) => acc + Number(t.security_deposit || 0), 0) || 0;
+        }
 
-        // 4. Pending Invoices
-        const { count: pendingInvoices } = await supabase
-          .from('invoices')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'pending');
+        // 4. Pending Invoices & Amount (Only for properties visible to this user)
+        let pendingInvoices = 0;
+        let pendingAmount = 0;
+        if (propertyIds.length > 0) {
+          const { data: invData, count } = await supabase
+            .from('invoices')
+            .select('amount', { count: 'exact' })
+            .eq('status', 'pending')
+            .in('property_id', propertyIds);
+          
+          pendingInvoices = count || 0;
+          pendingAmount = invData?.reduce((acc, inv) => acc + Number(inv.amount), 0) || 0;
+        }
 
-        // 5. Recent Activity
-        const { data: recentProps } = await supabase
-          .from('properties')
-          .select('name, created_at')
-          .order('created_at', { ascending: false })
-          .limit(4);
-
-        setData({
-          propertyCount,
-          tenantCount: tenantCount || 0,
-          totalRevenue,
-          pendingInvoices: pendingInvoices || 0,
-          vacantApartments,
-          vacantCommercial,
-          recentActivity: recentProps?.map(p => ({
+        // 5. Recent Activity (Filtered by visible properties)
+        const recentActivity = props
+          ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 4)
+          .map(p => ({
             title: "Property Added",
             description: `${p.name} was added to your portfolio`,
             time: new Date(p.created_at).toLocaleDateString(),
             status: 'success'
-          })) || []
+          })) || [];
+
+        setData({
+          propertyCount,
+          tenantCount,
+          totalRevenue,
+          totalAdvance,
+          pendingInvoices,
+          pendingAmount,
+          vacantApartments,
+          vacantCommercial,
+          occupancyRate,
+          recentActivity
         });
 
       } catch (error) {
@@ -128,13 +164,22 @@ export default function Dashboard() {
       label: "Properties", 
       value: data.propertyCount.toString(), 
       icon: <Building2 size={18} />, 
-      color: theme.palette.primary.main
+      color: theme.palette.primary.main,
+      path: '/properties'
     },
     { 
       label: "Tenants", 
       value: data.tenantCount.toString(), 
       icon: <Users size={18} />, 
-      color: theme.palette.secondary.main
+      color: theme.palette.secondary.main,
+      path: '/tenants'
+    },
+    { 
+      label: "Occupancy Rate", 
+      value: `${data.occupancyRate}%`, 
+      icon: <Percent size={18} />, 
+      color: '#8b5cf6', // Violet
+      path: '/properties'
     },
     { 
       label: "Vacant Units", 
@@ -142,13 +187,29 @@ export default function Dashboard() {
       apartments: data.vacantApartments,
       commercial: data.vacantCommercial,
       icon: <Home size={18} />, 
-      color: '#f59e0b' // Amber
+      color: '#f59e0b', // Amber
+      path: '/properties'
     },
     { 
       label: "Revenue", 
       value: `₹${data.totalRevenue.toLocaleString()}`, 
       icon: <TrendingUp size={18} />, 
-      color: '#10b981' // Emerald
+      color: '#10b981', // Emerald
+      path: '/invoices'
+    },
+    { 
+      label: "Pending Amount", 
+      value: `₹${data.pendingAmount.toLocaleString()}`, 
+      icon: <Clock size={18} />, 
+      color: '#f59e0b', // Amber
+      path: '/invoices'
+    },
+    { 
+      label: "Total Advance", 
+      value: `₹${data.totalAdvance.toLocaleString()}`, 
+      icon: <Wallet size={18} />, 
+      color: '#ec4899', // Pink
+      path: '/tenants'
     },
   ];
 
@@ -177,44 +238,77 @@ export default function Dashboard() {
       <Grid container spacing={3} sx={{ mb: 6 }}>
         {stats.map((stat, i) => (
           <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={i}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
-                  <Box sx={{ 
-                    p: 1.2, 
-                    borderRadius: 2, 
-                    bgcolor: alpha(stat.color, 0.1), 
-                    color: stat.color,
-                    display: 'flex'
-                  }}>
-                    {stat.icon}
+            <Link href={stat.path} style={{ textDecoration: 'none' }}>
+              <Card sx={{ 
+                height: '100%', 
+                cursor: 'pointer',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  transform: 'translateY(-6px)',
+                  boxShadow: `0 12px 24px -10px ${alpha(stat.color, 0.3)}`,
+                  borderColor: alpha(stat.color, 0.5),
+                  '& .stat-icon': {
+                    transform: 'scale(1.1)',
+                    bgcolor: alpha(stat.color, 0.2)
+                  }
+                }
+              }}>
+                <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: { xs: 1.5, sm: 2 } }}>
+                    <Box className="stat-icon" sx={{ 
+                      p: 1.2, 
+                      borderRadius: 2, 
+                      bgcolor: alpha(stat.color, 0.1), 
+                      color: stat.color,
+                      display: 'flex',
+                      transition: 'all 0.3s ease'
+                    }}>
+                      {stat.icon}
+                    </Box>
                   </Box>
-                </Box>
-                
-                {stat.isSplit ? (
-                  <Stack direction="row" spacing={2} sx={{ alignItems: 'end', justifyContent: 'space-between' }}>
-                    <Box>
-                      <Typography variant="h5" sx={{ fontWeight: 800 }}>{loading ? <CircularProgress size={16} /> : stat.apartments}</Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Apartments</Typography>
-                    </Box>
-                    <Box sx={{ height: 30, width: '1px', bgcolor: 'rgba(255,255,255,0.1)' }} />
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="h5" sx={{ fontWeight: 800 }}>{loading ? <CircularProgress size={16} /> : stat.commercial}</Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Commercial</Typography>
-                    </Box>
-                  </Stack>
-                ) : (
-                  <>
-                    <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
-                      {loading ? <CircularProgress size={20} /> : stat.value}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                      {stat.label}
-                    </Typography>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                  
+                  {stat.isSplit ? (
+                    <>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, mb: 2, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                        {stat.label}
+                      </Typography>
+                      <Stack 
+                        direction={{ xs: 'column', sm: 'row' }} 
+                        spacing={{ xs: 1.5, sm: 2 }} 
+                        sx={{ alignItems: { xs: 'flex-start', sm: 'flex-end' }, justifyContent: 'space-between' }}
+                      >
+                        <Box>
+                          <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                            {loading ? <CircularProgress size={16} /> : stat.apartments}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Apartments</Typography>
+                        </Box>
+                        <Box sx={{ 
+                          height: { xs: '1px', sm: 30 }, 
+                          width: { xs: '100%', sm: '1px' }, 
+                          bgcolor: 'rgba(255,255,255,0.1)' 
+                        }} />
+                        <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
+                          <Typography variant="h5" sx={{ fontWeight: 800, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                            {loading ? <CircularProgress size={16} /> : stat.commercial}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>Commercial</Typography>
+                        </Box>
+                      </Stack>
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
+                        {loading ? <CircularProgress size={20} /> : stat.value}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                        {stat.label}
+                      </Typography>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
           </Grid>
         ))}
       </Grid>

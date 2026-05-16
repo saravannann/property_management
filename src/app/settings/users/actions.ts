@@ -9,7 +9,17 @@ export async function createNewUser(formData: {
   role: string;
 }) {
   try {
-    const phone = formData.phone.trim();
+    let phone = formData.phone.trim();
+    
+    // Auto-format Indian numbers if 10 digits are entered
+    if (/^\d{10}$/.test(phone)) {
+      phone = '+91' + phone;
+    } else if (!phone.startsWith('+')) {
+      if (/^\d+$/.test(phone)) {
+        phone = '+' + phone;
+      }
+    }
+
     const virtualEmail = `${phone.replace('+', '')}@mobile.user`;
 
     // 1. Create user in Supabase Auth using Admin API

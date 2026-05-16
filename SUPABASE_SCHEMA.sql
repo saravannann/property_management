@@ -14,10 +14,16 @@ CREATE TABLE properties (
   property_type TEXT NOT NULL DEFAULT 'apartment', -- apartment, house, commercial, villa
   total_units INTEGER DEFAULT 1,
   owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  assigned_managers UUID[] DEFAULT '{}',
   image_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
+
+-- Update RLS Policies
+DROP POLICY IF EXISTS "Users and assigned managers can manage properties" ON properties;
+CREATE POLICY "Users and assigned managers can manage properties" ON properties
+  FOR ALL USING (auth.uid() = owner_id OR auth.uid() = ANY(assigned_managers));
 
 -- 2. Tenants Table
 CREATE TABLE tenants (
@@ -35,6 +41,8 @@ CREATE TABLE tenants (
   security_deposit DECIMAL(12, 2) NOT NULL,
   move_in_date DATE NOT NULL,
   move_out_date DATE,
+  agreement_start_date DATE,
+  agreement_end_date DATE,
   is_active BOOLEAN DEFAULT TRUE,
   document_urls TEXT[] DEFAULT '{}',
   agreement_url TEXT,
@@ -73,10 +81,15 @@ CREATE POLICY "Users can manage tenants of their properties" ON tenants
     property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid())
   );
 
--- Invoices: Users can only see invoices related to their properties
-CREATE POLICY "Users can manage invoices of their properties" ON invoices
+-- Invoices: Users and assigned managers can see invoices related to their properties
+DROP POLICY IF EXISTS "Users can manage invoices of their properties" ON invoices;
+CREATE POLICY "Users and managers can manage invoices" ON invoices
   FOR ALL USING (
-    property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid())
+    property_id IN (
+      SELECT id FROM properties 
+      WHERE owner_id = auth.uid() 
+      OR auth.uid() = ANY(assigned_managers)
+    )
   );
 
 -- 6. Functions for auto-updating timestamps

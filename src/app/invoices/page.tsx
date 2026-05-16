@@ -1,4 +1,5 @@
 'use client';
+import React, { useEffect, useState } from 'react';
 import { 
   Box, 
   Typography, 
@@ -17,7 +18,8 @@ import {
   InputBase,
   Stack,
   alpha,
-  useTheme
+  useTheme,
+  CircularProgress
 } from '@mui/material';
 import { 
   Receipt, 
@@ -31,51 +33,77 @@ import {
   AlertCircle 
 } from "lucide-react";
 import Link from "next/link";
+import { supabase } from '@/lib/supabase';
 
 export default function InvoicesPage() {
   const theme = useTheme();
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalCollected: 0,
+    pendingAmount: 0,
+    overdueAmount: 0
+  });
 
-  const invoices = [
-    {
-      id: "INV-2024-001",
-      tenant: "Rahul Sharma",
-      amount: "₹35,000",
-      date: "May 01, 2024",
-      dueDate: "May 10, 2024",
-      status: "Paid",
-    },
-    {
-      id: "INV-2024-002",
-      tenant: "Priya Singh",
-      amount: "₹85,000",
-      date: "May 01, 2024",
-      dueDate: "May 10, 2024",
-      status: "Pending",
-    },
-    {
-      id: "INV-2024-003",
-      tenant: "Amit Patel",
-      amount: "₹1,20,000",
-      date: "May 01, 2024",
-      dueDate: "May 05, 2024",
-      status: "Overdue",
-    },
-  ];
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          tenants (
+            name
+          ),
+          properties (
+            name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setInvoices(data || []);
+
+      // Calculate stats
+      const collected = data?.filter(inv => inv.status === 'paid')
+        .reduce((sum, inv) => sum + Number(inv.amount), 0) || 0;
+      
+      const pending = data?.filter(inv => inv.status === 'pending')
+        .reduce((sum, inv) => sum + Number(inv.amount), 0) || 0;
+      
+      const overdue = data?.filter(inv => inv.status === 'overdue')
+        .reduce((sum, inv) => sum + Number(inv.amount), 0) || 0;
+
+      setStats({
+        totalCollected: collected,
+        pendingAmount: pending,
+        overdueAmount: overdue
+      });
+    } catch (error) {
+      console.error('Error fetching invoices:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Paid': return 'success';
-      case 'Pending': return 'warning';
-      case 'Overdue': return 'error';
+    switch (status.toLowerCase()) {
+      case 'paid': return 'success';
+      case 'pending': return 'warning';
+      case 'overdue': return 'error';
       default: return 'default';
     }
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Paid': return <CheckCircle2 size={14} />;
-      case 'Pending': return <Clock size={14} />;
-      case 'Overdue': return <AlertCircle size={14} />;
+    switch (status.toLowerCase()) {
+      case 'paid': return <CheckCircle2 size={14} />;
+      case 'pending': return <Clock size={14} />;
+      case 'overdue': return <AlertCircle size={14} />;
       default: return undefined;
     }
   };
@@ -107,18 +135,18 @@ export default function InvoicesPage() {
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {[
-          { label: "Total Collected", value: "₹12,45,000", color: '#10b981' },
-          { label: "Pending Amount", value: "₹2,15,000", color: '#f59e0b' },
-          { label: "Overdue Amount", value: "₹85,000", color: '#ef4444' }
+          { label: "Total Collected", value: `₹${stats.totalCollected.toLocaleString()}`, color: '#10b981' },
+          { label: "Pending Amount", value: `₹${stats.pendingAmount.toLocaleString()}`, color: '#f59e0b' },
+          { label: "Overdue Amount", value: `₹${stats.overdueAmount.toLocaleString()}`, color: '#ef4444' }
         ].map((stat, i) => (
           <Grid size={{ xs: 12, md: 4 }} key={i}>
-            <Card sx={{ borderLeft: `4px solid ${stat.color}` }}>
+            <Card sx={{ borderLeft: `4px solid ${stat.color}`, height: '100%' }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', letterSpacing: 1 }}>
                   {stat.label}
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 800, mt: 1 }}>
-                  {stat.value}
+                  {loading ? <CircularProgress size={24} /> : stat.value}
                 </Typography>
               </CardContent>
             </Card>
@@ -158,14 +186,27 @@ export default function InvoicesPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {invoices.map((invoice) => (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ py: 10 }}>
+                  <CircularProgress />
+                </TableCell>
+              </TableRow>
+            ) : invoices.map((invoice) => (
               <TableRow key={invoice.id} sx={{ '&:hover': { bgcolor: alpha('#fff', 0.01) } }}>
                 <TableCell sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'primary.light' }}>
-                  {invoice.id}
+                  {invoice.invoice_number || invoice.id.slice(0, 8).toUpperCase()}
                 </TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>{invoice.tenant}</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>{invoice.amount}</TableCell>
-                <TableCell sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>{invoice.dueDate}</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{invoice.tenants?.name || 'Unknown'}</Typography>
+                    <Typography variant="caption" color="text.secondary">{invoice.properties?.name || 'N/A'}</Typography>
+                  </Box>
+                </TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>₹{Number(invoice.amount).toLocaleString()}</TableCell>
+                <TableCell sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
+                  {new Date(invoice.due_date).toLocaleDateString()}
+                </TableCell>
                 <TableCell>
                   <Chip 
                     label={invoice.status} 
@@ -176,14 +217,15 @@ export default function InvoicesPage() {
                     sx={{ 
                       fontWeight: 800, 
                       fontSize: '0.65rem',
+                      textTransform: 'capitalize',
                       bgcolor: alpha(
-                        invoice.status === 'Paid' ? '#10b981' : 
-                        invoice.status === 'Pending' ? '#f59e0b' : '#ef4444', 
+                        invoice.status.toLowerCase() === 'paid' ? '#10b981' : 
+                        invoice.status.toLowerCase() === 'pending' ? '#f59e0b' : '#ef4444', 
                         0.1
                       ),
                       color: 
-                        invoice.status === 'Paid' ? '#10b981' : 
-                        invoice.status === 'Pending' ? '#f59e0b' : '#ef4444',
+                        invoice.status.toLowerCase() === 'paid' ? '#10b981' : 
+                        invoice.status.toLowerCase() === 'pending' ? '#f59e0b' : '#ef4444',
                       border: 'none',
                       '& .MuiChip-icon': { color: 'inherit' }
                     }}

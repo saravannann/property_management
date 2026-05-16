@@ -14,7 +14,11 @@ import {
   Stack,
   alpha,
   useTheme,
-  CircularProgress
+  CircularProgress,
+  Checkbox,
+  ListItemText,
+  OutlinedInput,
+  Chip
 } from '@mui/material';
 import { 
   ChevronLeft, 
@@ -44,34 +48,49 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
     city: '',
     state: '',
     pincode: '',
-    description: ''
+    description: '',
+    assigned_managers: [] as string[]
   });
 
+  const [managers, setManagers] = useState<any[]>([]);
+
   useEffect(() => {
-    const fetchProperty = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
+        
+        // Fetch Property
+        const { data: propData, error: propError } = await supabase
           .from('properties')
           .select('*')
           .eq('id', id)
           .single();
 
-        if (error) throw error;
-        if (data) {
+        if (propError) throw propError;
+        
+        // Fetch Managers
+        const { data: managersData } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .eq('role', 'manager');
+        
+        setManagers(managersData || []);
+
+        if (propData) {
           setFormData({
-            name: data.name || '',
-            property_type: data.property_type || 'Apartment',
-            total_units: data.total_units || '',
-            address: data.address || '',
-            city: data.city || '',
-            state: data.state || '',
-            pincode: data.pincode || '',
-            description: data.description || ''
+            name: propData.name || '',
+            property_type: propData.property_type || 'Apartment',
+            total_units: propData.total_units || '',
+            address: propData.address || '',
+            city: propData.city || '',
+            state: propData.state || '',
+            pincode: propData.pincode || '',
+            description: propData.description || '',
+            assigned_managers: propData.assigned_managers || []
           });
         }
       } catch (error) {
-        console.error('Error fetching property:', error);
+        console.error('Error fetching data:', error);
         alert('Could not find property details');
         router.push('/properties');
       } finally {
@@ -79,7 +98,7 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
       }
     };
 
-    fetchProperty();
+    fetchData();
   }, [id, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,6 +106,14 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
     setFormData(prev => ({
       ...prev,
       [name]: name === 'total_units' ? (value === '' ? '' : parseInt(value)) : value
+    }));
+  };
+
+  const handleManagersChange = (event: any) => {
+    const { target: { value } } = event;
+    setFormData(prev => ({
+      ...prev,
+      assigned_managers: typeof value === 'string' ? value.split(',') : value,
     }));
   };
 
@@ -101,7 +128,15 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
       const { error } = await supabase
         .from('properties')
         .update({
-          ...formData,
+          name: formData.name,
+          property_type: formData.property_type,
+          total_units: formData.total_units === '' ? null : formData.total_units,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          pincode: formData.pincode,
+          description: formData.description,
+          assigned_managers: formData.assigned_managers,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);
@@ -229,6 +264,44 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
                       value={formData.total_units}
                       onChange={handleChange}
                     />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <TextField 
+                      fullWidth 
+                      select 
+                      label="Assigned Managers" 
+                      name="assigned_managers"
+                      value={formData.assigned_managers}
+                      onChange={handleManagersChange}
+                      helperText="Delegated managers who can view and manage this property"
+                      slotProps={{
+                        select: {
+                          multiple: true,
+                          renderValue: (selected: any) => (
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                              {selected.map((value: string) => {
+                                const manager = managers.find(m => m.id === value);
+                                return (
+                                  <Chip 
+                                    key={value} 
+                                    label={manager?.full_name || manager?.email || value} 
+                                    size="small"
+                                    sx={{ bgcolor: alpha(theme.palette.primary.main, 0.1), fontWeight: 600 }}
+                                  />
+                                );
+                              })}
+                            </Box>
+                          ),
+                        }
+                      }}
+                    >
+                      {managers.map((manager) => (
+                        <MenuItem key={manager.id} value={manager.id}>
+                          <Checkbox checked={formData.assigned_managers.indexOf(manager.id) > -1} />
+                          <ListItemText primary={manager.full_name || manager.email} />
+                        </MenuItem>
+                      ))}
+                    </TextField>
                   </Grid>
                   <Grid size={{ xs: 12 }}>
                     <TextField 

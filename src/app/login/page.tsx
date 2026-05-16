@@ -77,22 +77,54 @@ export default function LoginPage() {
       console.log('Attempting login for phone:', phone);
 
       // 1. Get the actual email (virtual or real) from the profiles table via RPC
-      // This is the most robust way as it doesn't care about the internal email format
-      const { data: email, error: rpcError } = await supabase.rpc('get_email_by_phone', { 
-        p_phone: phone 
-      });
-
-      if (rpcError) throw rpcError;
+      let email: string | null = null;
       
+      try {
+        const { data: rpcEmail, error: rpcError } = await supabase.rpc('get_email_by_phone', { 
+          p_phone: phone 
+        });
+        if (!rpcError) email = rpcEmail;
+      } catch (e) {
+        console.warn('RPC check failed, trying fallback...');
+      }
+
+      // Fallback: If RPC failed or returned nothing, try the virtual email format directly
+      // This is especially useful for newly added managers
       if (!email) {
-        throw new Error(`No account found for ${phone}. Please run the setup-admin page first.`);
+        const virtualEmail = `${phone.replace('+', '')}@mobile.user`;
+        
+        // We can verify if this user exists in auth or profiles if we want, 
+        // but trying to sign in directly is more efficient as it handles the verification
+        email = virtualEmail;
       }
 
       // 2. Sign in using the retrieved email and password
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
+      let { data, error: authError } = await supabase.auth.signInWithPassword({
         email: email,
         password: formData.password,
       });
+
+      // Flexible Login: If the first attempt fails and it was a virtual email, 
+      // try the alternative format (with or without 91 prefix)
+      if (authError && email.endsWith('@mobile.user')) {
+        const currentDigits = email.split('@')[0];
+        const altDigits = currentDigits.startsWith('91') 
+          ? currentDigits.substring(2) 
+          : '91' + currentDigits;
+        
+        const altEmail = `${altDigits}@mobile.user`;
+        console.log('Retrying with alternative format:', altEmail);
+        
+        const retry = await supabase.auth.signInWithPassword({
+          email: altEmail,
+          password: formData.password,
+        });
+        
+        if (!retry.error) {
+          authError = null;
+          data = retry.data;
+        }
+      }
 
       if (authError) throw authError;
 
