@@ -19,11 +19,11 @@ export async function setupFirstAdmin() {
     ) || [];
     
     for (const u of existingUsers) {
-      await supabaseAdmin.auth.admin.deleteUser(u.id).catch(() => {});
+      await supabaseAdmin.auth.admin.deleteUser(u.id);
     }
 
-    await supabaseAdmin.from('profiles').delete().eq('phone_number', '+91' + phone).catch(() => {});
-    await supabaseAdmin.from('profiles').delete().ilike('email', '%admin%').catch(() => {});
+    await supabaseAdmin.from('profiles').delete().eq('phone_number', '+91' + phone);
+    await supabaseAdmin.from('profiles').delete().ilike('email', '%admin%');
 
     // 2. Create User
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({

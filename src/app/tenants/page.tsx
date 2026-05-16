@@ -1,6 +1,5 @@
 'use client';
-// Force refresh for imports
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { 
   Box, 
   Typography, 
@@ -39,7 +38,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from '@/lib/supabase';
 
-export default function TenantsPage() {
+function TenantsContent() {
   const theme = useTheme();
   const searchParams = useSearchParams();
   const propertyId = searchParams.get('propertyId');
@@ -249,5 +248,17 @@ export default function TenantsPage() {
         </TableContainer>
       )}
     </Box>
+  );
+}
+
+export default function TenantsPage() {
+  return (
+    <Suspense fallback={
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+        <CircularProgress />
+      </Box>
+    }>
+      <TenantsContent />
+    </Suspense>
   );
 }
