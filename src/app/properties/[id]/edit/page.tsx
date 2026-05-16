@@ -52,6 +52,9 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
     assigned_managers: [] as string[]
   });
 
+  const [currentUnits, setCurrentUnits] = useState<any[]>([]);
+  const [originalUnitCount, setOriginalUnitCount] = useState<number>(0);
+
   const [managers, setManagers] = useState<any[]>([]);
 
   useEffect(() => {
@@ -67,6 +70,16 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
           .single();
 
         if (propError) throw propError;
+
+        // Fetch Units
+        const { data: unitsData } = await supabase
+          .from('units')
+          .select('*')
+          .eq('property_id', id)
+          .order('unit_number', { ascending: true });
+        
+        setCurrentUnits(unitsData || []);
+        setOriginalUnitCount(propData.total_units || unitsData?.length || 0);
         
         // Fetch Managers
         const { data: managersData } = await supabase
@@ -125,6 +138,64 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
 
     try {
       setSaving(true);
+      const newTotal = formData.total_units === '' ? 0 : Number(formData.total_units);
+      const diff = newTotal - originalUnitCount;
+
+      if (diff > 0) {
+        // Adding Units
+        // Find highest unit number and its format
+        const lastUnitStr = currentUnits.length > 0 
+          ? currentUnits[currentUnits.length - 1].unit_number 
+          : '100';
+        
+        // Split prefix and number (e.g., "EMA-06" -> prefix: "EMA-", number: "06")
+        const match = lastUnitStr.match(/^(.*?)(\d+)$/);
+        let prefix = '';
+        let lastNum = 100;
+        let padding = 0;
+
+        if (match) {
+          prefix = match[1];
+          lastNum = parseInt(match[2]);
+          padding = match[2].length;
+        }
+
+        const newUnits = [];
+        for (let i = 1; i <= diff; i++) {
+          const nextNum = lastNum + i;
+          const nextNumStr = nextNum.toString().padStart(padding, '0');
+          newUnits.push({
+            property_id: id,
+            unit_number: `${prefix}${nextNumStr}`,
+            status: 'vacant'
+          });
+        }
+
+        const { error: insertError } = await supabase
+          .from('units')
+          .insert(newUnits);
+        
+        if (insertError) throw insertError;
+      } else if (diff < 0) {
+        // Removing Units
+        const unitsToRemove = currentUnits.slice(newTotal);
+        
+        // Check for occupancy
+        for (const unit of unitsToRemove) {
+          if (unit.status !== 'vacant') {
+            throw new Error(`Cannot reduce unit count. Unit ${unit.unit_number} is currently occupied.`);
+          }
+        }
+
+        // Delete units
+        const { error: deleteError } = await supabase
+          .from('units')
+          .delete()
+          .in('id', unitsToRemove.map(u => u.id));
+        
+        if (deleteError) throw deleteError;
+      }
+
       const { error } = await supabase
         .from('properties')
         .update({
@@ -147,7 +218,7 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
       router.refresh();
     } catch (error: any) {
       console.error('Error updating property:', error);
-      alert('Error updating property: ' + error.message);
+      alert(error.message || 'Error updating property');
     } finally {
       setSaving(false);
     }
