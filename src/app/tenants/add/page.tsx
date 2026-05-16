@@ -259,7 +259,7 @@ export default function AddTenantPage() {
                     <TextField 
                       fullWidth type="date" label="Move-in Date" name="move_in_date" value={formData.move_in_date} onChange={handleChange} required 
                       slotProps={{ 
-                        label: { shrink: true },
+                        inputLabel: { shrink: true },
                         input: { startAdornment: <InputAdornment position="start"><Calendar size={18} /></InputAdornment> },
                         htmlInput: { placeholder: '' }
                       }}
@@ -276,7 +276,7 @@ export default function AddTenantPage() {
                     <TextField 
                       fullWidth type="date" label="Agreement Start Date" name="agreement_start_date" value={formData.agreement_start_date} onChange={handleChange}
                       slotProps={{ 
-                        label: { shrink: true },
+                        inputLabel: { shrink: true },
                         input: { startAdornment: <InputAdornment position="start"><Calendar size={18} /></InputAdornment> },
                         htmlInput: { placeholder: '' }
                       }}
@@ -286,7 +286,7 @@ export default function AddTenantPage() {
                     <TextField 
                       fullWidth type="date" label="Agreement End Date" name="agreement_end_date" value={formData.agreement_end_date} onChange={handleChange}
                       slotProps={{ 
-                        label: { shrink: true },
+                        inputLabel: { shrink: true },
                         input: { startAdornment: <InputAdornment position="start"><Calendar size={18} /></InputAdornment> },
                         htmlInput: { placeholder: '' }
                       }}

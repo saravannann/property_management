@@ -312,7 +312,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                       onChange={handleChange}
                       required
                       slotProps={{ 
-                        label: { shrink: true },
+                        inputLabel: { shrink: true },
                         htmlInput: { placeholder: '' } 
                       }}
                     />
@@ -326,7 +326,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                       value={formData.move_out_date}
                       onChange={handleChange}
                       slotProps={{ 
-                        label: { shrink: true },
+                        inputLabel: { shrink: true },
                         htmlInput: { placeholder: '' } 
                       }}
                       helperText="Leave empty if tenant is currently active"
@@ -350,7 +350,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                       value={formData.agreement_start_date}
                       onChange={handleChange}
                       slotProps={{ 
-                        label: { shrink: true },
+                        inputLabel: { shrink: true },
                         htmlInput: { placeholder: '' } 
                       }}
                     />
@@ -364,7 +364,7 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
                       value={formData.agreement_end_date}
                       onChange={handleChange}
                       slotProps={{ 
-                        label: { shrink: true },
+                        inputLabel: { shrink: true },
                         htmlInput: { placeholder: '' } 
                       }}
                     />

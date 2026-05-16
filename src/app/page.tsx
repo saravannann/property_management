@@ -192,21 +192,21 @@ export default function Dashboard() {
     },
     { 
       label: "Revenue", 
-      value: `₹${data.totalRevenue.toLocaleString()}`, 
+      value: `₹${(data.totalRevenue || 0).toLocaleString()}`, 
       icon: <TrendingUp size={18} />, 
       color: '#10b981', // Emerald
       path: '/invoices'
     },
     { 
       label: "Pending Amount", 
-      value: `₹${data.pendingAmount.toLocaleString()}`, 
+      value: `₹${(data.pendingAmount || 0).toLocaleString()}`, 
       icon: <Clock size={18} />, 
       color: '#f59e0b', // Amber
       path: '/invoices'
     },
     { 
       label: "Total Advance", 
-      value: `₹${data.totalAdvance.toLocaleString()}`, 
+      value: `₹${(data.totalAdvance || 0).toLocaleString()}`, 
       icon: <Wallet size={18} />, 
       color: '#ec4899', // Pink
       path: '/tenants'
