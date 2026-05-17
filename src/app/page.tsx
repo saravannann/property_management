@@ -24,7 +24,8 @@ import {
   ArrowRight,
   Home,
   Percent,
-  Wallet
+  Wallet,
+  AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from '@/lib/supabase';
@@ -44,6 +45,7 @@ export default function Dashboard() {
     occupancyRate: 0,
     pendingGenerationPercent: 100,
     prevMonthName: '',
+    highRiskTenantsCount: 0,
     recentActivity: [] as any[]
   });
 
@@ -159,7 +161,39 @@ export default function Dashboard() {
           }
         }
 
-        // 6. Recent Activity (Filtered by visible properties)
+        // 6. Calculate High Risk Tenants (Unpaid >= 80% of Security Deposit)
+        let highRiskTenantsCount = 0;
+        if (propertyIds.length > 0) {
+          const { data: unpaidInvoices } = await supabase
+            .from('invoices')
+            .select('tenant_id, amount')
+            .in('status', ['pending', 'overdue'])
+            .in('property_id', propertyIds);
+
+          const { data: activeTenantsList } = await supabase
+            .from('tenants')
+            .select('id, security_deposit')
+            .eq('is_active', true)
+            .in('property_id', propertyIds);
+
+          if (unpaidInvoices && activeTenantsList) {
+            const unpaidByTenant = unpaidInvoices.reduce((acc, inv) => {
+              acc[inv.tenant_id] = (acc[inv.tenant_id] || 0) + Number(inv.amount);
+              return acc;
+            }, {} as Record<string, number>);
+
+            highRiskTenantsCount = activeTenantsList.reduce((count, tenant) => {
+              const unpaid = unpaidByTenant[tenant.id] || 0;
+              const deposit = Number(tenant.security_deposit) || 0;
+              if (deposit > 0 && unpaid >= deposit * 0.8) {
+                return count + 1;
+              }
+              return count;
+            }, 0);
+          }
+        }
+
+        // 7. Recent Activity (Filtered by visible properties)
         const recentActivity = props
           ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 4)
@@ -182,6 +216,7 @@ export default function Dashboard() {
           occupancyRate,
           pendingGenerationPercent,
           prevMonthName,
+          highRiskTenantsCount,
           recentActivity
         });
 
@@ -232,6 +267,13 @@ export default function Dashboard() {
       icon: <Receipt size={18} />, 
       color: data.pendingGenerationPercent > 0 ? '#ef4444' : '#10b981', // Red if pending, Green if 0%
       path: '/invoices/add'
+    },
+    { 
+      label: "High Risk Tenants", 
+      value: data.highRiskTenantsCount.toString(), 
+      icon: <AlertCircle size={18} />, 
+      color: data.highRiskTenantsCount > 0 ? '#ef4444' : '#10b981', // Red if > 0
+      path: '/tenants'
     },
     { 
       label: "Revenue", 
