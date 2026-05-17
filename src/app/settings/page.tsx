@@ -145,10 +145,10 @@ export default function SettingsPage() {
       return;
     }
 
-    if (passwordForm.newPassword.length < 5) {
+    if (passwordForm.newPassword.length < 6) {
       setNotification({
         open: true,
-        message: locale === 'ta' ? 'கடவுச்சொல் குறைந்தது 5 எழுத்துக்களைக் கொண்டிருக்க வேண்டும்!' : 'Password must be at least 5 characters long!',
+        message: locale === 'ta' ? 'கடவுச்சொல் குறைந்தது 6 எழுத்துக்களைக் கொண்டிருக்க வேண்டும்!' : 'Password must be at least 6 characters long!',
         severity: 'error'
       });
       return;
