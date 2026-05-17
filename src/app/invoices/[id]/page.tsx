@@ -156,16 +156,28 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
   return (
     <Box sx={{ maxWidth: 900, mx: 'auto', animation: 'fadeIn 0.5s ease', '@media print': { m: 0, p: 0, maxWidth: 'none' } }}>
       {/* Non-printable header actions */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, '@media print': { display: 'none' } }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', sm: 'row' }, 
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'stretch', sm: 'center' }, 
+        gap: 2,
+        mb: 4, 
+        '@media print': { display: 'none' } 
+      }}>
         <Button 
           component={Link} 
           href="/invoices" 
           startIcon={<ChevronLeft size={18} />}
-          sx={{ color: 'text.secondary' }}
+          sx={{ color: 'text.secondary', alignSelf: 'flex-start' }}
         >
           Back to Invoices
         </Button>
-        <Stack direction="row" spacing={2}>
+        <Stack 
+          direction={{ xs: 'column', sm: 'row' }} 
+          spacing={1.5} 
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           {(invoice.status === 'pending' || invoice.status === 'overdue') && (
             <>
               <Button 
@@ -173,6 +185,7 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
                 color="primary" 
                 onClick={() => setPaymentModalOpen(true)}
                 disabled={updating}
+                fullWidth
               >
                 Record Partial Payment
               </Button>
@@ -182,22 +195,34 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
                 startIcon={updating ? <CircularProgress size={18} color="inherit" /> : <CheckCircle size={18} />} 
                 onClick={() => handleMarkAsPaid(true)}
                 disabled={updating}
+                fullWidth
               >
                 Mark as Paid in Full
               </Button>
             </>
           )}
-          <Button variant="outlined" startIcon={<Printer size={18} />} onClick={handlePrint}>
-            Print
-          </Button>
-          <Button variant="contained" startIcon={<Download size={18} />}>
-            Download PDF
-          </Button>
+          <Stack direction="row" spacing={1.5} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+            <Button 
+              variant="outlined" 
+              startIcon={<Printer size={18} />} 
+              onClick={handlePrint}
+              sx={{ flex: 1 }}
+            >
+              Print
+            </Button>
+            <Button 
+              variant="contained" 
+              startIcon={<Download size={18} />}
+              sx={{ flex: 1 }}
+            >
+              Download PDF
+            </Button>
+          </Stack>
         </Stack>
       </Box>
 
       <Card sx={{ '@media print': { boxShadow: 'none', border: 'none' } }}>
-        <CardContent sx={{ p: { xs: 3, md: 6 } }}>
+        <CardContent sx={{ p: { xs: 2, sm: 6 } }}>
           {/* Invoice Header */}
           <Grid container spacing={4} sx={{ mb: 6 }}>
             <Grid size={{ xs: 12, sm: 6 }}>
