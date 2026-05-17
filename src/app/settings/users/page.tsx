@@ -38,9 +38,11 @@ import {
 } from "lucide-react";
 import { supabase } from '@/lib/supabase';
 import { createNewUser, deleteUser } from './actions';
+import { useLanguage } from '@/components/LanguageProvider';
 
 export default function UserManagementPage() {
   const theme = useTheme();
+  const { setLocale } = useLanguage();
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -81,7 +83,7 @@ export default function UserManagementPage() {
       
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('*')
         .eq('id', user.id)
         .single();
         
@@ -224,12 +226,19 @@ export default function UserManagementPage() {
                       onChange={async (e) => {
                         try {
                           const newLang = e.target.value;
-                          const { error } = await supabase
-                            .from('profiles')
-                            .update({ language: newLang })
-                            .eq('id', profile.id);
-                          if (error) throw error;
-                          fetchProfiles();
+                          if (currentUser && profile.id === currentUser.id) {
+                            // If the admin is changing their own language, use the setLocale provider 
+                            // to sync DB, localStorage, cookies, and trigger an instant session reload
+                            await setLocale(newLang as 'en' | 'ta');
+                          } else {
+                            // If changing another user's language, simply write to the DB
+                            const { error } = await supabase
+                              .from('profiles')
+                              .update({ language: newLang })
+                              .eq('id', profile.id);
+                            if (error) throw error;
+                            fetchProfiles();
+                          }
                         } catch (err: any) {
                           alert('Error updating language: ' + err.message);
                         }
