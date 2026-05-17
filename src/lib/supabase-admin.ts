@@ -8,9 +8,32 @@ if (!supabaseServiceKey) {
 }
 
 // This client has admin privileges and should ONLY be used in Server Components or Server Actions
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
+let adminClient: ReturnType<typeof createClient> | null = null;
+
+export const getSupabaseAdmin = () => {
+  if (adminClient) return adminClient;
+
+  if (!supabaseServiceKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing. Admin features will not work.');
   }
-});
+
+  adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  });
+
+  return adminClient;
+};
+
+// Backwards compatibility export
+export const supabaseAdmin = {
+  get auth() {
+    return getSupabaseAdmin().auth;
+  },
+  from(...args: Parameters<ReturnType<typeof createClient>['from']>) {
+    return getSupabaseAdmin().from(...args);
+  }
+} as unknown as ReturnType<typeof createClient>;
+

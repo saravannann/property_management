@@ -1,6 +1,6 @@
 'use server';
 
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { revalidatePath } from 'next/cache';
 
 export async function createNewUser(formData: {
@@ -22,8 +22,11 @@ export async function createNewUser(formData: {
 
     const virtualEmail = `${phone.replace('+', '')}@mobile.user`;
 
+    // Get lazy-initialized admin client
+    const adminClient = getSupabaseAdmin();
+
     // 1. Create user in Supabase Auth using Admin API
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: authUser, error: authError } = await adminClient.auth.admin.createUser({
       email: virtualEmail,
       password: 'password123', // Default temporary password
       email_confirm: true,
@@ -50,12 +53,14 @@ export async function createNewUser(formData: {
 
 export async function deleteUser(userId: string) {
   try {
+    const adminClient = getSupabaseAdmin();
+
     // Delete user from Supabase Auth using Admin service client
-    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    const { error: authError } = await adminClient.auth.admin.deleteUser(userId);
     if (authError) throw authError;
 
     // Delete corresponding profile just in case cascade trigger is not present
-    await supabaseAdmin.from('profiles').delete().eq('id', userId);
+    await adminClient.from('profiles').delete().eq('id', userId);
 
     revalidatePath('/settings/users');
     return { success: true };
@@ -64,4 +69,5 @@ export async function deleteUser(userId: string) {
     return { success: false, error: error.message };
   }
 }
+
 
