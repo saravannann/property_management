@@ -264,6 +264,7 @@ export default function InvoicesPage() {
               <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Invoice ID</TableCell>
               <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Tenant</TableCell>
               <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Amount</TableCell>
+              <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Balance Due</TableCell>
               <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Due Date</TableCell>
               <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Status</TableCell>
               <TableCell align="right" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Actions</TableCell>
@@ -272,13 +273,13 @@ export default function InvoicesPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 10 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 10 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : filteredInvoices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary' }}>
                   No invoices found matching your filters.
                 </TableCell>
               </TableRow>
@@ -294,6 +295,9 @@ export default function InvoicesPage() {
                   </Box>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>₹{Number(invoice.amount).toLocaleString()}</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: Math.max(0, Number(invoice.amount) - Number(invoice.amount_paid || 0)) > 0 ? 'error.main' : 'success.main' }}>
+                  ₹{Math.max(0, Number(invoice.amount) - Number(invoice.amount_paid || 0)).toLocaleString()}
+                </TableCell>
                 <TableCell sx={{ color: 'text.secondary', fontSize: '0.85rem' }}>
                   {new Date(invoice.due_date).toLocaleDateString()}
                 </TableCell>
