@@ -48,8 +48,13 @@ export default function AddInvoicePage() {
   const currentMonthStr = String(currentMonth).padStart(2, '0');
   
   const initialBillingMonthStart = `${currentYear}-${currentMonthStr}-01`;
-  const daysInCurrentMonth = new Date(currentYear, currentMonth, 0).getDate();
-  const initialPeriodEnd = `${currentYear}-${currentMonthStr}-${daysInCurrentMonth}`;
+  const prevPeriodMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+  const prevPeriodYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+  const prevPeriodMonthStr = String(prevPeriodMonth).padStart(2, '0');
+  
+  const initialPeriodStart = `${prevPeriodYear}-${prevPeriodMonthStr}-01`;
+  const daysInPrevPeriodMonth = new Date(prevPeriodYear, prevPeriodMonth, 0).getDate();
+  const initialPeriodEnd = `${prevPeriodYear}-${prevPeriodMonthStr}-${daysInPrevPeriodMonth}`;
   
   const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
   const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
@@ -60,7 +65,7 @@ export default function AddInvoicePage() {
     tenant_id: '',
     billing_month: initialBillingMonthStart,
     due_date: initialDueDate,
-    billing_period_start: initialBillingMonthStart,
+    billing_period_start: initialPeriodStart,
     billing_period_end: initialPeriodEnd,
     rent_amount: '' as string | number,
     water_charges: '' as string | number,
@@ -84,9 +89,14 @@ export default function AddInvoicePage() {
     // Explicitly generate the dates as literal strings to defeat timezone shifts
     const billingMonthStart = `${yearStr}-${monthStr}-01`;
     
-    // Period is exact days in month
-    const daysInMonth = new Date(year, month, 0).getDate();
-    const periodEnd = `${yearStr}-${monthStr}-${daysInMonth}`;
+    // Period is the previous full month
+    const prevPeriodMonth = month === 1 ? 12 : month - 1;
+    const prevPeriodYear = month === 1 ? year - 1 : year;
+    const prevPeriodMonthStr = String(prevPeriodMonth).padStart(2, '0');
+    
+    const periodStart = `${prevPeriodYear}-${prevPeriodMonthStr}-01`;
+    const daysInPrevMonth = new Date(prevPeriodYear, prevPeriodMonth, 0).getDate();
+    const periodEnd = `${prevPeriodYear}-${prevPeriodMonthStr}-${daysInPrevMonth}`;
     
     // Due Date is 15th of the next month
     const nxtMonth = month === 12 ? 1 : month + 1;
@@ -97,7 +107,7 @@ export default function AddInvoicePage() {
       ...prev,
       billing_month: billingMonthStart,
       due_date: dueDate,
-      billing_period_start: billingMonthStart,
+      billing_period_start: periodStart,
       billing_period_end: periodEnd
     }));
   };
