@@ -262,6 +262,11 @@ export default function AddInvoicePage() {
       return;
     }
 
+    if (Number(formData.curr_electricity_reading) < Number(formData.prev_electricity_reading)) {
+      alert('Current electricity reading cannot be less than the previous reading.');
+      return;
+    }
+
     try {
       setLoading(true);
       const tenant = tenants.find(t => t.id === formData.tenant_id);
