@@ -27,7 +27,9 @@ import {
   Mail, 
   Phone,
   Save,
-  CheckCircle2
+  CheckCircle2,
+  Lock,
+  KeyRound
 } from "lucide-react";
 import { supabase } from '@/lib/supabase';
 import { useLanguage } from '@/components/LanguageProvider';
@@ -46,6 +48,12 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     fullName: '',
     phone: ''
+  });
+
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    newPassword: '',
+    confirmPassword: ''
   });
 
   const [notification, setNotification] = useState<{
@@ -123,6 +131,52 @@ export default function SettingsPage() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setNotification({
+        open: true,
+        message: locale === 'ta' ? 'கடவுச்சொற்கள் பொருந்தவில்லை!' : 'Passwords do not match!',
+        severity: 'error'
+      });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setNotification({
+        open: true,
+        message: locale === 'ta' ? 'கடவுச்சொல் குறைந்தது 6 எழுத்துக்களைக் கொண்டிருக்க வேண்டும்!' : 'Password must be at least 6 characters long!',
+        severity: 'error'
+      });
+      return;
+    }
+
+    try {
+      setUpdatingPassword(true);
+      const { error } = await supabase.auth.updateUser({
+        password: passwordForm.newPassword
+      });
+
+      if (error) throw error;
+
+      setNotification({
+        open: true,
+        message: locale === 'ta' ? 'கடவுச்சொல் வெற்றிகரமாக புதுப்பிக்கப்பட்டது!' : 'Password updated successfully!',
+        severity: 'success'
+      });
+      setPasswordForm({ newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      setNotification({
+        open: true,
+        message: error.message || 'Error updating password.',
+        severity: 'error'
+      });
+    } finally {
+      setUpdatingPassword(false);
     }
   };
 
@@ -285,6 +339,63 @@ export default function SettingsPage() {
                   ? (locale === 'ta' ? 'ஒளித் தோற்றத்திற்கு மாற்றுக' : 'Switch to Light Theme') 
                   : (locale === 'ta' ? 'அடர் தோற்றத்திற்கு மாற்றுக' : 'Switch to Dark Theme')}
               </Button>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Security / Password Card */}
+        <Grid size={{ xs: 12 }}>
+          <Card>
+            <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
+                <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha(theme.palette.secondary.main, 0.1), color: 'secondary.main', display: 'flex' }}>
+                  <KeyRound size={20} />
+                </Box>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                  {locale === 'ta' ? 'கடவுச்சொல்லை மாற்றவும்' : 'Change Password'}
+                </Typography>
+              </Box>
+              
+              <form onSubmit={handlePasswordChange}>
+                <Grid container spacing={3}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      type="password"
+                      label={locale === 'ta' ? 'புதிய கடவுச்சொல்' : 'New Password'}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                      placeholder="••••••••"
+                      required
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      fullWidth
+                      type="password"
+                      label={locale === 'ta' ? 'கடவுச்சொல்லை உறுதிப்படுத்தவும்' : 'Confirm New Password'}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                      placeholder="••••••••"
+                      required
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1 }}>
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        color="secondary"
+                        startIcon={updatingPassword ? <CircularProgress size={16} color="inherit" /> : <Lock size={16} />}
+                        disabled={updatingPassword}
+                        sx={{ px: 3 }}
+                      >
+                        {updatingPassword ? (locale === 'ta' ? 'மாற்றப்படுகிறது...' : 'Updating...') : (locale === 'ta' ? 'கடவுச்சொல்லைப் புதுப்பி' : 'Update Password')}
+                      </Button>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </form>
             </CardContent>
           </Card>
         </Grid>
