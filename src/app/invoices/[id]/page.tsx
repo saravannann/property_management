@@ -86,8 +86,11 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
       
       const totalAmount = Number(invoice.amount);
       const currentlyPaid = Number(invoice.amount_paid || 0);
+      const balanceDue = totalAmount - currentlyPaid;
       
       let newPaid = totalAmount;
+      let excessPayment = 0;
+
       if (!isFull) {
         const added = Number(paymentAmount);
         if (isNaN(added) || added <= 0) {
@@ -95,17 +98,49 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
           setUpdating(false);
           return;
         }
-        newPaid = currentlyPaid + added;
+
+        if (added > balanceDue) {
+          // Overpayment! Cap the invoice payment at totalAmount, send the rest to tenant credits
+          newPaid = totalAmount;
+          excessPayment = added - balanceDue;
+        } else {
+          newPaid = currentlyPaid + added;
+        }
       }
 
       const newStatus = newPaid >= totalAmount ? 'paid' : invoice.status;
 
-      const { error } = await supabase
+      // Update the invoice in Supabase
+      const { error: invoiceError } = await supabase
         .from('invoices')
         .update({ status: newStatus, amount_paid: newPaid })
         .eq('id', invoice.id);
         
-      if (error) throw error;
+      if (invoiceError) throw invoiceError;
+
+      // If there is excess payment, credit it to the tenant's excess_payment account!
+      if (excessPayment > 0 && invoice.tenant_id) {
+        // Fetch current excess_payment first
+        const { data: tenantData, error: tenantFetchError } = await supabase
+          .from('tenants')
+          .select('excess_payment')
+          .eq('id', invoice.tenant_id)
+          .single();
+          
+        if (tenantFetchError) throw tenantFetchError;
+        
+        const currentExcess = Number(tenantData?.excess_payment || 0);
+        const newExcess = currentExcess + excessPayment;
+        
+        const { error: tenantUpdateError } = await supabase
+          .from('tenants')
+          .update({ excess_payment: newExcess })
+          .eq('id', invoice.tenant_id);
+          
+        if (tenantUpdateError) throw tenantUpdateError;
+        
+        alert(`Overpayment of ₹${excessPayment.toLocaleString('en-IN', { minimumFractionDigits: 2 })} detected! This has been credited to the tenant's account and will be deducted from their next invoice.`);
+      }
       
       setInvoice({ ...invoice, status: newStatus, amount_paid: newPaid });
       setPaymentModalOpen(false);
@@ -321,13 +356,31 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
                   </TableRow>
                 )}
 
-                {Number(invoice.previous_balance) > 0 && (
+                {Number(invoice.previous_balance || 0) !== 0 && (
                   <TableRow>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }} color="error.main">Previous Balance (Arrears)</Typography>
-                      <Typography variant="caption" color="text.secondary">Carried forward from unpaid invoices</Typography>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ fontWeight: 600 }} 
+                        color={Number(invoice.previous_balance) < 0 ? 'success.main' : 'error.main'}
+                      >
+                        {Number(invoice.previous_balance) < 0 ? 'Account Credit Applied' : 'Previous Balance (Arrears)'}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {Number(invoice.previous_balance) < 0 ? 'Adjustment from tenant overpayment' : 'Carried forward from unpaid invoices'}
+                      </Typography>
                     </TableCell>
-                    <TableCell align="right" sx={{ color: 'error.main' }}>₹{Number(invoice.previous_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell 
+                      align="right" 
+                      sx={{ 
+                        color: Number(invoice.previous_balance) < 0 ? 'success.main' : 'error.main',
+                        fontWeight: 700 
+                      }}
+                    >
+                      {Number(invoice.previous_balance) < 0 
+                        ? `-₹${Math.abs(Number(invoice.previous_balance)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` 
+                        : `₹${Number(invoice.previous_balance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -379,7 +432,7 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
         <DialogTitle sx={{ fontWeight: 800 }}>Record Partial Payment</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
-            Enter the amount the tenant has paid. This will be deducted from the total balance.
+            Enter the amount the tenant has paid. If the payment exceeds the balance due, the excess amount will be automatically recorded as an account credit and deducted from their next invoice.
           </Typography>
           <TextField
             fullWidth
@@ -387,7 +440,7 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
             type="number"
             value={paymentAmount}
             onChange={(e) => setPaymentAmount(e.target.value)}
-            slotProps={{ htmlInput: { min: 1, max: Number(invoice.amount) - Number(invoice.amount_paid || 0) } }}
+            slotProps={{ htmlInput: { min: 1 } }}
             autoFocus
           />
         </DialogContent>

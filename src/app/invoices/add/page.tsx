@@ -114,7 +114,7 @@ export default function AddInvoicePage() {
       try {
         const { data, error } = await supabase
           .from('tenants')
-          .select('id, name, property_id, unit_number, monthly_rent, electricity_rate, water_charges, properties(name)')
+          .select('id, name, property_id, unit_number, monthly_rent, electricity_rate, water_charges, excess_payment, properties(name)')
           .eq('is_active', true)
           .order('name');
         if (error) throw error;
@@ -176,6 +176,8 @@ export default function AddInvoicePage() {
           .in('status', ['pending', 'overdue']);
         
         const totalUnpaid = unpaidInvoices?.reduce((sum, inv) => sum + Math.max(0, Number(inv.amount) - Number(inv.amount_paid || 0)), 0) || 0;
+        const tenantCredit = Number(tenant?.excess_payment || 0);
+        const netPreviousBalance = totalUnpaid - tenantCredit;
 
         setFormData(prev => ({
           ...prev,
@@ -183,20 +185,23 @@ export default function AddInvoicePage() {
           electricity_rate: tenant?.electricity_rate || '',
           water_charges: tenant?.water_charges || '',
           prev_electricity_reading: lastInv?.curr_electricity_reading || '',
-          previous_balance: totalUnpaid || ''
+          previous_balance: netPreviousBalance
         }));
         setLastInvoice(lastInv);
 
       } catch (error) {
         console.error('Error fetching tenant data:', error);
-        // If no last invoice, just set rent
+        const tenant = tenants.find(t => t.id === formData.tenant_id);
+        const tenantCredit = Number(tenant?.excess_payment || 0);
+        
+        // If no last invoice, just set rent and deduct credit if any
         setFormData(prev => ({
           ...prev,
           rent_amount: tenant?.monthly_rent || '',
           electricity_rate: tenant?.electricity_rate || '',
           water_charges: tenant?.water_charges || '',
           prev_electricity_reading: '',
-          previous_balance: ''
+          previous_balance: -tenantCredit
         }));
       }
     };
@@ -256,7 +261,8 @@ export default function AddInvoicePage() {
   }, [electricityUsage, formData.electricity_rate]);
 
   const totalAmount = useMemo(() => {
-    return (
+    return Math.max(
+      0,
       Number(prorationDetails.proratedAmount) +
       Number(formData.water_charges) +
       Number(electricityAmount) +
@@ -341,6 +347,25 @@ export default function AddInvoicePage() {
       // 4. Final Format: INV-PROP-YYYYMM-SS
       const invoiceNumber = `INV-${propCode}-${yyyymm}-${sequence}`;
 
+      const subtotal = Number(prorationDetails.proratedAmount) +
+        Number(formData.water_charges) +
+        Number(electricityAmount) +
+        Number(formData.misc_charges);
+
+      const creditBalance = Number(tenant?.excess_payment || 0);
+      const prevBalInput = Number(formData.previous_balance || 0);
+      
+      let newTenantExcess = creditBalance;
+      if (prevBalInput < 0) {
+        const credit = Math.abs(prevBalInput);
+        newTenantExcess = Math.max(0, credit - subtotal);
+      } else {
+        // If there was an excess payment credit but it has been consumed by arrears, set excess to 0
+        newTenantExcess = 0;
+      }
+
+      const invoiceStatus = totalAmount === 0 ? 'paid' : 'pending';
+
       const { error } = await supabase
         .from('invoices')
         .insert([{
@@ -359,11 +384,21 @@ export default function AddInvoicePage() {
           misc_charges: Number(formData.misc_charges),
           previous_balance: Number(formData.previous_balance),
           amount: totalAmount,
-          status: 'pending',
+          status: invoiceStatus,
           description: formData.description
         }]);
 
       if (error) throw error;
+
+      // Update tenant's excess_payment credit balance in the database
+      if (creditBalance !== newTenantExcess) {
+        const { error: tenantError } = await supabase
+          .from('tenants')
+          .update({ excess_payment: newTenantExcess })
+          .eq('id', tenant.id);
+          
+        if (tenantError) throw tenantError;
+      }
       
       // If we are rolling over a previous balance, mark older open invoices as 'elapsed'
       if (Number(formData.previous_balance) > 0) {
@@ -435,6 +470,19 @@ export default function AddInvoicePage() {
                       ))}
                     </TextField>
                   </Grid>
+                  {formData.tenant_id && (() => {
+                    const tenant = tenants.find(t => t.id === formData.tenant_id);
+                    if (tenant && Number(tenant.excess_payment) > 0) {
+                      return (
+                        <Grid size={12}>
+                          <Alert severity="success" variant="outlined" sx={{ borderRadius: 2, bgcolor: alpha(theme.palette.success.main, 0.05), borderColor: alpha(theme.palette.success.main, 0.2) }}>
+                            <strong>Account Credit Applied:</strong> This tenant has a credit balance of <strong>₹{Number(tenant.excess_payment).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong> from an overpayment. It has been automatically applied to this invoice as a negative carry forward.
+                          </Alert>
+                        </Grid>
+                      );
+                    }
+                    return null;
+                  })()}
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField 
                       fullWidth 
@@ -605,8 +653,14 @@ export default function AddInvoicePage() {
                   <Typography sx={{ fontWeight: 600 }}>₹{Number(formData.misc_charges).toLocaleString()}</Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography color="text.secondary">Arrears</Typography>
-                  <Typography sx={{ fontWeight: 600, color: '#ef4444' }}>₹{Number(formData.previous_balance).toLocaleString()}</Typography>
+                  <Typography color="text.secondary">
+                    {Number(formData.previous_balance || 0) < 0 ? 'Account Credit Applied' : 'Arrears'}
+                  </Typography>
+                  <Typography sx={{ fontWeight: 600, color: Number(formData.previous_balance || 0) < 0 ? 'success.main' : '#ef4444' }}>
+                    {Number(formData.previous_balance || 0) < 0 
+                      ? `-₹${Math.abs(Number(formData.previous_balance)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` 
+                      : `₹${Number(formData.previous_balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                  </Typography>
                 </Box>
                 
                 <Divider sx={{ my: 1 }} />

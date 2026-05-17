@@ -48,6 +48,7 @@ CREATE TABLE tenants (
   is_active BOOLEAN DEFAULT TRUE,
   document_urls TEXT[] DEFAULT '{}',
   agreement_url TEXT,
+  excess_payment DECIMAL(12, 2) DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
