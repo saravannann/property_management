@@ -56,9 +56,8 @@ export default function AddInvoicePage() {
   const daysInPrevPeriodMonth = new Date(prevPeriodYear, prevPeriodMonth, 0).getDate();
   const initialPeriodEnd = `${prevPeriodYear}-${prevPeriodMonthStr}-${daysInPrevPeriodMonth}`;
   
-  const nextMonth = currentMonth === 12 ? 1 : currentMonth + 1;
-  const nextMonthYear = currentMonth === 12 ? currentYear + 1 : currentYear;
-  const initialDueDate = `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-15`;
+  // Due Date is 15th of the current billing month
+  const initialDueDate = `${currentYear}-${currentMonthStr}-15`;
 
   const [formData, setFormData] = useState({
     property_id: '',
@@ -98,10 +97,8 @@ export default function AddInvoicePage() {
     const daysInPrevMonth = new Date(prevPeriodYear, prevPeriodMonth, 0).getDate();
     const periodEnd = `${prevPeriodYear}-${prevPeriodMonthStr}-${daysInPrevMonth}`;
     
-    // Due Date is 15th of the next month
-    const nxtMonth = month === 12 ? 1 : month + 1;
-    const nxtMonthYear = month === 12 ? year + 1 : year;
-    const dueDate = `${nxtMonthYear}-${String(nxtMonth).padStart(2, '0')}-15`;
+    // Due Date is 15th of the current billing month
+    const dueDate = `${yearStr}-${monthStr}-15`;
 
     setFormData(prev => ({
       ...prev,
