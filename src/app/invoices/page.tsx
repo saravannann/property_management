@@ -51,11 +51,7 @@ export default function InvoicesPage() {
   const [filterMonth, setFilterMonth] = useState('');
   const [filterTenantId, setFilterTenantId] = useState('');
 
-  const [stats, setStats] = useState({
-    totalCollected: 0,
-    pendingAmount: 0,
-    overdueAmount: 0
-  });
+
 
   const fetchInvoices = async () => {
     try {
@@ -76,24 +72,7 @@ export default function InvoicesPage() {
       if (error) throw error;
       setInvoices(data || []);
 
-      // Calculate stats
-      const collected = data?.reduce((sum, inv) => {
-        // If it's explicitly 'paid', we count the full amount (or amount_paid if it exists)
-        if (inv.status === 'paid') return sum + Number(inv.amount);
-        return sum + Number(inv.amount_paid || 0);
-      }, 0) || 0;
-      
-      const pending = data?.filter(inv => inv.status === 'pending')
-        .reduce((sum, inv) => sum + Math.max(0, Number(inv.amount) - Number(inv.amount_paid || 0)), 0) || 0;
-      
-      const overdue = data?.filter(inv => inv.status === 'overdue')
-        .reduce((sum, inv) => sum + Math.max(0, Number(inv.amount) - Number(inv.amount_paid || 0)), 0) || 0;
 
-      setStats({
-        totalCollected: collected,
-        pendingAmount: pending,
-        overdueAmount: overdue
-      });
     } catch (error) {
       console.error('Error fetching invoices:', error);
     } finally {
@@ -152,6 +131,26 @@ export default function InvoicesPage() {
     }
     return match;
   });
+
+  // Dynamically calculate stats based on currently filtered invoices
+  const stats = React.useMemo(() => {
+    const collected = filteredInvoices.reduce((sum, inv) => {
+      if (inv.status === 'paid') return sum + Number(inv.amount);
+      return sum + Number(inv.amount_paid || 0);
+    }, 0);
+    
+    const pending = filteredInvoices.filter(inv => inv.status === 'pending')
+      .reduce((sum, inv) => sum + Math.max(0, Number(inv.amount) - Number(inv.amount_paid || 0)), 0);
+      
+    const overdue = filteredInvoices.filter(inv => inv.status === 'overdue')
+      .reduce((sum, inv) => sum + Math.max(0, Number(inv.amount) - Number(inv.amount_paid || 0)), 0);
+
+    return {
+      totalCollected: collected,
+      pendingAmount: pending,
+      overdueAmount: overdue
+    };
+  }, [filteredInvoices]);
 
   return (
     <Box sx={{ animation: 'fadeIn 0.5s ease' }}>
