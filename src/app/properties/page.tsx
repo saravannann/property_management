@@ -31,10 +31,12 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from '@/lib/supabase';
+import { useLanguage } from '@/components/LanguageProvider';
 
 export default function PropertiesPage() {
   const theme = useTheme();
   const router = useRouter();
+  const { t, locale } = useLanguage();
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -121,15 +123,15 @@ export default function PropertiesPage() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, md: 4 } }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
-            Properties
+            {t('properties.title')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
-            Manage your real estate portfolio across multiple locations.
+            {t('properties.subtitle')}
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" size="small" startIcon={<Filter size={16} />}>
-            Filter
+            {locale === 'ta' ? "வடிகட்டி" : "Filter"}
           </Button>
           <Link href="/properties/add" style={{ textDecoration: 'none' }}>
             <Button 
@@ -137,7 +139,7 @@ export default function PropertiesPage() {
               size="small"
               startIcon={<Plus size={16} />}
             >
-              Add
+              {locale === 'ta' ? "சேர்" : t('properties.addProperty')}
             </Button>
           </Link>
         </Stack>
@@ -156,7 +158,7 @@ export default function PropertiesPage() {
       }}>
         <Search size={18} style={{ color: alpha('#f8fafc', 0.5) }} />
         <InputBase
-          placeholder="Search..."
+          placeholder={t('common.search')}
           sx={{ ml: 1.5, flex: 1, color: 'text.primary', fontSize: '0.85rem' }}
         />
       </Box>
@@ -251,21 +253,21 @@ export default function PropertiesPage() {
                     mb: { xs: 1.5, sm: 3 }
                   }}>
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.25, fontSize: '0.6rem' }}>UNITS</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.25, fontSize: '0.6rem' }}>{locale === 'ta' ? "மொத்தம்" : t('properties.totalUnits').toUpperCase()}</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 700, fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>{property.total_units || property.units}</Typography>
                     </Box>
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.25, fontSize: '0.6rem' }}>OCCUPIED</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.25, fontSize: '0.6rem' }}>{locale === 'ta' ? "குடியிருப்பவை" : t('properties.occupied').toUpperCase()}</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main', fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>{property.occupied || 0}</Typography>
                     </Box>
                     <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.25, fontSize: '0.6rem' }}>VACANT</Typography>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: 'text.secondary', display: 'block', mb: 0.25, fontSize: '0.6rem' }}>{locale === 'ta' ? "காலியானவை" : t('properties.vacant').toUpperCase()}</Typography>
                       <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main', fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>{(property.total_units || property.units) - (property.occupied || 0)}</Typography>
                     </Box>
                   </Box>
 
                   <Link href={`/tenants?propertyId=${property.id}`} style={{ textDecoration: 'none', width: '100%' }}>
-                    <Button variant="contained" fullWidth size="small" endIcon={<ArrowRight size={14} />} sx={{ py: { xs: 0.5, sm: 1 }, fontSize: '0.75rem' }}>Tenants</Button>
+                    <Button variant="contained" fullWidth size="small" endIcon={<ArrowRight size={14} />} sx={{ py: { xs: 0.5, sm: 1 }, fontSize: '0.75rem' }}>{t('common.tenants')}</Button>
                   </Link>
                 </CardContent>
               </Card>
@@ -302,8 +304,8 @@ export default function PropertiesPage() {
                 }}>
                   <Plus size={40} />
                 </Box>
-                <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700 }}>Add Property</Typography>
-                <Typography variant="body2" color="text.secondary">Expand your portfolio</Typography>
+                <Typography variant="h6" color="text.primary" sx={{ fontWeight: 700 }}>{t('properties.addProperty')}</Typography>
+                <Typography variant="body2" color="text.secondary">{locale === 'ta' ? "சொத்து சேர்க்கவும்" : "Expand your portfolio"}</Typography>
               </Card>
             </Link>
           </Grid>
@@ -322,16 +324,19 @@ export default function PropertiesPage() {
           router.push(`/properties/${selectedPropertyId}/edit`);
           handleMenuClose();
         }}>
-          Edit Property
+          {t('properties.editProperty')}
         </MenuItem>
         <MenuItem onClick={async () => {
-          if (confirm('Are you sure you want to delete this property?')) {
+          const confirmMsg = locale === 'ta' 
+            ? "நிச்சயமாக இந்த சொத்தை நீக்க வேண்டுமா?" 
+            : "Are you sure you want to delete this property?";
+          if (confirm(confirmMsg)) {
             await supabase.from('properties').delete().eq('id', selectedPropertyId);
             fetchProperties();
           }
           handleMenuClose();
         }} sx={{ color: 'error.main' }}>
-          Delete Property
+          {t('properties.deleteProperty')}
         </MenuItem>
       </Menu>
     </Box>

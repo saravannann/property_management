@@ -104,15 +104,35 @@ export default function InvoicesPage() {
     }
   };
 
-  // Compute unique filter options dynamically from the loaded invoices
-  const uniqueProperties = Array.from(new Set(invoices.map(inv => inv.property_id))).map(id => {
+  // Compute unique filter options dynamically, allowing them to cascade based on OTHER active filters
+  const propertyFilteredInvoices = invoices.filter(inv => {
+    if (filterTenantId && inv.tenant_id !== filterTenantId) return false;
+    if (filterMonth && !inv.billing_date.startsWith(filterMonth)) return false;
+    return true;
+  });
+
+  const tenantFilteredInvoices = invoices.filter(inv => {
+    if (filterPropertyId && inv.property_id !== filterPropertyId) return false;
+    if (filterMonth && !inv.billing_date.startsWith(filterMonth)) return false;
+    return true;
+  });
+
+  const monthFilteredInvoices = invoices.filter(inv => {
+    if (filterPropertyId && inv.property_id !== filterPropertyId) return false;
+    if (filterTenantId && inv.tenant_id !== filterTenantId) return false;
+    return true;
+  });
+
+  const uniqueProperties = Array.from(new Set(propertyFilteredInvoices.map(inv => inv.property_id))).map(id => {
     const inv = invoices.find(i => i.property_id === id);
     return { id, name: inv?.properties?.name || 'Unknown' };
   }).filter(p => p.id);
 
-  const uniqueMonths = Array.from(new Set(invoices.map(inv => inv.billing_date))).filter(Boolean).sort((a: any, b: any) => new Date(b).getTime() - new Date(a).getTime());
+  const uniqueMonths = Array.from(new Set(monthFilteredInvoices.map(inv => inv.billing_date?.substring(0, 7))))
+    .filter(Boolean)
+    .sort((a: any, b: any) => new Date(`${b}-01`).getTime() - new Date(`${a}-01`).getTime());
 
-  const uniqueTenants = Array.from(new Set(invoices.map(inv => inv.tenant_id))).map(id => {
+  const uniqueTenants = Array.from(new Set(tenantFilteredInvoices.map(inv => inv.tenant_id))).map(id => {
     const inv = invoices.find(i => i.tenant_id === id);
     return { id, name: inv?.tenants?.name || 'Unknown' };
   }).filter(t => t.id);
@@ -122,7 +142,7 @@ export default function InvoicesPage() {
     let match = true;
     if (filterPropertyId && inv.property_id !== filterPropertyId) match = false;
     if (filterTenantId && inv.tenant_id !== filterTenantId) match = false;
-    if (filterMonth && inv.billing_date !== filterMonth) match = false;
+    if (filterMonth && !inv.billing_date.startsWith(filterMonth)) match = false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const num = (inv.invoice_number || '').toLowerCase();
@@ -238,7 +258,11 @@ export default function InvoicesPage() {
                 <InputLabel>Month</InputLabel>
                 <Select value={filterMonth} label="Month" onChange={(e) => setFilterMonth(e.target.value)}>
                   <MenuItem value="">All Months</MenuItem>
-                  {uniqueMonths.map((m: any) => <MenuItem key={m} value={m}>{new Date(m).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</MenuItem>)}
+                  {uniqueMonths.map((m: any) => {
+                    const [year, month] = m.split('-');
+                    const date = new Date(Number(year), Number(month) - 1, 1);
+                    return <MenuItem key={m} value={m}>{date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</MenuItem>;
+                  })}
                 </Select>
               </FormControl>
             </Grid>

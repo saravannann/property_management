@@ -18,7 +18,8 @@ import {
   InputBase,
   Badge,
   alpha,
-  useTheme
+  useTheme,
+  Button
 } from '@mui/material';
 import { 
   LayoutDashboard, 
@@ -37,12 +38,14 @@ import Link from "next/link";
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useColorMode } from './Providers';
+import { useLanguage } from './LanguageProvider';
 
 const drawerWidth = 260;
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
   const colorMode = useColorMode();
+  const { locale, setLocale, t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const isPublicPage = pathname === '/login' || pathname === '/setup-admin';
@@ -93,10 +96,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const navItems = [
-    { label: "Dashboard", icon: <LayoutDashboard size={20} />, href: "/" },
-    { label: "Properties", icon: <Building2 size={20} />, href: "/properties" },
-    { label: "Tenants", icon: <Users size={20} />, href: "/tenants" },
-    { label: "Invoices", icon: <Receipt size={20} />, href: "/invoices" },
+    { label: t('common.dashboard'), icon: <LayoutDashboard size={20} />, href: "/" },
+    { label: t('common.properties'), icon: <Building2 size={20} />, href: "/properties" },
+    { label: t('common.tenants'), icon: <Users size={20} />, href: "/tenants" },
+    { label: t('common.invoices'), icon: <Receipt size={20} />, href: "/invoices" },
   ];
 
   if (userRole === 'admin') {
@@ -219,12 +222,35 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             }}>
               <Search size={16} style={{ color: theme.palette.text.secondary }} />
               <InputBase
-                placeholder="Search..."
+                placeholder={t('common.search')}
                 sx={{ ml: 1, flex: 1, color: 'text.primary', fontSize: '0.85rem' }}
               />
             </Box>
 
             <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
+              <Button 
+                onClick={() => setLocale(locale === 'en' ? 'ta' : 'en')}
+                variant="outlined"
+                size="small"
+                sx={{ 
+                  textTransform: 'none', 
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)', 
+                  color: 'text.secondary',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  px: 1.5,
+                  py: 0.5,
+                  borderRadius: 2,
+                  mr: 1,
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    bgcolor: alpha(theme.palette.primary.main, 0.04)
+                  }
+                }}
+              >
+                {locale === 'en' ? 'தமிழ்' : 'English'}
+              </Button>
               <IconButton 
                 onClick={colorMode.toggleColorMode} 
                 sx={{ color: 'text.secondary' }}

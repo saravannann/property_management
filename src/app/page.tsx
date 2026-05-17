@@ -29,9 +29,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from '@/lib/supabase';
+import { useLanguage } from '@/components/LanguageProvider';
 
 export default function Dashboard() {
   const theme = useTheme();
+  const { t, locale } = useLanguage();
   const [loading, setLoading] = React.useState(true);
   const [data, setData] = React.useState({
     propertyCount: 0,
@@ -199,9 +201,9 @@ export default function Dashboard() {
           ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 4)
           .map(p => ({
-            title: "Property Added",
-            description: `${p.name} was added to your portfolio`,
-            time: new Date(p.created_at).toLocaleDateString(),
+            title: locale === 'ta' ? "சொத்து சேர்க்கப்பட்டது" : "Property Added",
+            description: locale === 'ta' ? `${p.name} உங்கள் சொத்து பட்டியலில் சேர்க்கப்பட்டது` : `${p.name} was added to your portfolio`,
+            time: new Date(p.created_at).toLocaleDateString(locale === 'ta' ? 'ta-IN' : 'en-IN'),
             status: 'success'
           })) || [];
 
@@ -229,32 +231,81 @@ export default function Dashboard() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [locale]);
+
+  const getSmartInsight = () => {
+    const isTa = locale === 'ta';
+    if (data.highRiskTenantsCount > 0) {
+      return {
+        text: isTa 
+          ? `"${data.highRiskTenantsCount} வாடகையாளர்கள் தங்கள் முன்பண வரம்பை விட அதிக நிலுவைத் தொகையைக் கொண்டுள்ளனர். லீஸ் விபரங்களை மறுபரிசீலனை செய்யவும்."`
+          : `"${data.highRiskTenantsCount} active tenant${data.highRiskTenantsCount > 1 ? 's have' : ' has'} pending balances close to or exceeding their security deposit limit. A lease review is advised."`,
+        actionText: isTa ? "வாடகையாளர்களை ஆராய்க" : "Review High Risk Tenants",
+        link: "/tenants"
+      };
+    }
+    if (data.pendingGenerationPercent > 0) {
+      return {
+        text: isTa 
+          ? `"${data.prevMonthName || 'கடந்த மாத'} வாடகை ரசீதுகளில் ${data.pendingGenerationPercent}% இன்னும் தயாரிக்கப்படவில்லை. பணப்புழக்கத்தைத் தக்கவைக்க ரசீதுகளை உருவாக்கவும்."`
+          : `"${data.pendingGenerationPercent}% of invoices for the month of ${data.prevMonthName || 'last month'} are still pending generation. Complete billing to maintain cash flow."`,
+        actionText: isTa ? "ரசீதுகளை உருவாக்கு" : "Generate Invoices",
+        link: "/invoices/add"
+      };
+    }
+    if (data.pendingAmount > 0) {
+      return {
+        text: isTa 
+          ? `"உங்களுக்கு ₹${data.pendingAmount.toLocaleString()} நிலுவைத் தொகை வர வேண்டியுள்ளது (${data.pendingInvoices} ரசீதுகள்). வாடகையாளர்களுக்கு நினைவூட்டல் அனுப்பவும்."`
+          : `"You have ₹${data.pendingAmount.toLocaleString()} in outstanding payments across ${data.pendingInvoices} pending invoices. Consider sending reminders."`,
+        actionText: isTa ? "வாடகையை வசூலி" : "Collect Payments",
+        link: "/invoices"
+      };
+    }
+    if (data.occupancyRate < 85 && data.occupancyRate > 0) {
+      return {
+        text: isTa 
+          ? `"உங்கள் சொத்துக்களின் ஒட்டுமொத்த வாடகைக்குடி வீதம் ${data.occupancyRate}% ஆக உள்ளது. வாடகை வருவாயை அதிகரிக்க காலியாக உள்ள வீடுகளை விளம்பரப்படுத்தவும்."`
+          : `"Your portfolio occupancy is currently at ${data.occupancyRate}%. Consider listing the vacant spaces to optimize rent yield."`,
+        actionText: isTa ? "சொத்துக்களை நிர்வகி" : "Manage Properties",
+        link: "/properties"
+      };
+    }
+    return {
+      text: isTa 
+        ? `"உங்கள் வாடகை சொத்துக்கள் மிகச் சிறப்பாக இயங்குகின்றன! 100% வாடகைக் குடியேற்றமும் ரசீதுகளும் முறையாக உள்ளன."`
+        : `"Your property portfolio is highly optimized! Occupancy is strong and previous billing cycles are 100% completed."`,
+      actionText: isTa ? "சொத்துக்களைப் பார்" : "View Properties",
+      link: "/properties"
+    };
+  };
+
+  const insight = getSmartInsight();
 
   const stats = [
     { 
-      label: "Properties", 
+      label: t('common.properties'), 
       value: data.propertyCount.toString(), 
       icon: <Building2 size={18} />, 
       color: theme.palette.primary.main,
       path: '/properties'
     },
     { 
-      label: "Tenants", 
+      label: t('common.tenants'), 
       value: data.tenantCount.toString(), 
       icon: <Users size={18} />, 
       color: theme.palette.secondary.main,
       path: '/tenants'
     },
     { 
-      label: "Occupancy Rate", 
+      label: t('dashboard.occupancy'), 
       value: `${data.occupancyRate}%`, 
       icon: <Percent size={18} />, 
       color: '#8b5cf6', // Violet
       path: '/properties'
     },
     { 
-      label: "Vacant Units", 
+      label: t('dashboard.vacantUnits'), 
       isSplit: true,
       apartments: data.vacantApartments,
       commercial: data.vacantCommercial,
@@ -263,39 +314,44 @@ export default function Dashboard() {
       path: '/properties'
     },
     { 
-      label: `Pending Generation (${data.prevMonthName})`, 
+      label: locale === 'ta' ? `நிலுவையிலுள்ள ரசீதுகள் (${data.prevMonthName})` : `Pending Generation (${data.prevMonthName})`, 
       value: `${data.pendingGenerationPercent}%`, 
       icon: <Receipt size={18} />, 
       color: data.pendingGenerationPercent > 0 ? '#ef4444' : '#10b981', // Red if pending, Green if 0%
       path: '/invoices/add'
     },
     { 
-      label: "High Risk Tenants", 
+      label: t('dashboard.highRisk'), 
       value: data.highRiskTenantsCount.toString(), 
       icon: <AlertCircle size={18} />, 
       color: data.highRiskTenantsCount > 0 ? '#ef4444' : '#10b981', // Red if > 0
       path: '/tenants'
     },
     { 
-      label: "Revenue", 
+      label: t('dashboard.revenue'), 
       value: `₹${(data.totalRevenue || 0).toLocaleString()}`, 
       icon: <TrendingUp size={18} />, 
       color: '#10b981', // Emerald
       path: '/invoices'
     },
     { 
-      label: "Pending Amount", 
+      label: t('dashboard.pendingAmount'), 
       value: `₹${(data.pendingAmount || 0).toLocaleString()}`, 
       icon: <Clock size={18} />, 
       color: '#f59e0b', // Amber
       path: '/invoices'
     },
     { 
-      label: "Total Advance", 
+      label: t('dashboard.totalAdvance'), 
       value: `₹${(data.totalAdvance || 0).toLocaleString()}`, 
       icon: <Wallet size={18} />, 
       color: '#ec4899', // Pink
-      path: '/tenants'
+      path: '/tenants',
+      extra: data.totalAdvance > 0 
+        ? locale === 'ta' 
+          ? `மதிப்பிடப்பட்ட வருவாய்: ₹${Math.round((data.totalAdvance * 0.09) / 12).toLocaleString()}/மாதம் (@9% வட்டி)`
+          : `Est. Yield: ₹${Math.round((data.totalAdvance * 0.09) / 12).toLocaleString()}/mo (@9% p.a.)`
+        : null
     },
   ];
 
@@ -308,10 +364,10 @@ export default function Dashboard() {
             letterSpacing: -0.5,
             fontSize: { xs: '1.75rem', md: '2.5rem' }
           }}>
-            Dashboard
+            {t('common.dashboard')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-            Welcome back! Here's what's happening with your properties.
+            {t('common.welcome')}
           </Typography>
         </Box>
       </Box>
@@ -360,7 +416,7 @@ export default function Dashboard() {
                         sx={{ alignItems: 'flex-start' }}
                       >
                         <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                          <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>
+                           <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: '0.9rem', sm: '1.25rem' } }}>
                             {loading ? <CircularProgress size={12} /> : stat.apartments}
                           </Typography>
                           <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, fontSize: '0.6rem' }}>APT</Typography>
@@ -381,6 +437,11 @@ export default function Dashboard() {
                       <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500, fontSize: { xs: '0.7rem', sm: '0.875rem' } }}>
                         {stat.label}
                       </Typography>
+                      {stat.extra && (
+                        <Typography variant="caption" sx={{ display: 'block', mt: 1.5, color: '#10b981', fontWeight: 700, fontSize: { xs: '0.55rem', sm: '0.725rem' } }}>
+                          {stat.extra}
+                        </Typography>
+                      )}
                     </>
                   )}
                 </CardContent>
@@ -396,9 +457,9 @@ export default function Dashboard() {
           <Card sx={{ height: '100%' }}>
             <CardContent sx={{ p: 3 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>Recent Activity</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>{t('dashboard.recentActivity')}</Typography>
                 <Button variant="text" endIcon={<ArrowRight size={16} />} size="small">
-                  View All
+                  {locale === 'ta' ? "அனைத்தையும் பார்" : "View All"}
                 </Button>
               </Box>
               <Stack spacing={4}>
@@ -435,7 +496,7 @@ export default function Dashboard() {
                   ))
                 ) : (
                   <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                    No recent activity found.
+                    {t('dashboard.noActivity')}
                   </Typography>
                 )}
               </Stack>
@@ -449,29 +510,35 @@ export default function Dashboard() {
             <Card sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05), border: '1px dashed', borderColor: 'primary.main' }}>
               <CardContent sx={{ p: 3 }}>
                 <Typography variant="overline" color="primary" sx={{ fontWeight: 800, letterSpacing: 1 }}>
-                  Smart Insight
+                  {t('dashboard.smartInsight')}
                 </Typography>
                 <Typography variant="body1" sx={{ mt: 1, mb: 2, fontWeight: 500, fontStyle: 'italic' }}>
-                  "Unit 4B occupancy has been 100% for the last 12 months. Consider a lease renewal review."
+                  {insight.text}
                 </Typography>
-                <Button variant="outlined" fullWidth size="small">
-                  Review Lease
+                <Button 
+                  variant="outlined" 
+                  fullWidth 
+                  size="small"
+                  component={Link}
+                  href={insight.link}
+                >
+                  {insight.actionText}
                 </Button>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent sx={{ p: 3 }}>
-                <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>Quick Actions</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>{t('dashboard.quickActions')}</Typography>
                 <Stack spacing={1.5}>
                   <Button variant="text" fullWidth sx={{ justifyContent: 'start', py: 1.5, bgcolor: theme.palette.mode === 'dark' ? alpha('#fff', 0.02) : alpha('#000', 0.02) }} startIcon={<Receipt size={18} color="#f59e0b" />}>
-                    Generate Monthly Invoices
+                    {t('dashboard.generateInvoices')}
                   </Button>
                   <Button variant="text" fullWidth sx={{ justifyContent: 'start', py: 1.5, bgcolor: theme.palette.mode === 'dark' ? alpha('#fff', 0.02) : alpha('#000', 0.02) }} startIcon={<Users size={18} color="#6366f1" />}>
-                    Pending Tenant Requests
+                    {t('dashboard.pendingRequests')}
                   </Button>
                   <Button variant="text" fullWidth sx={{ justifyContent: 'start', py: 1.5, bgcolor: theme.palette.mode === 'dark' ? alpha('#fff', 0.02) : alpha('#000', 0.02) }} startIcon={<Building2 size={18} color="#c084fc" />}>
-                    Update Property Media
+                    {t('dashboard.updateMedia')}
                   </Button>
                 </Stack>
               </CardContent>

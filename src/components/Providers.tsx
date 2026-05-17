@@ -5,6 +5,7 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { getThemeOptions } from '@/lib/theme';
+import { LanguageProvider } from './LanguageProvider';
 
 export const ColorModeContext = createContext({ toggleColorMode: () => {} });
 
@@ -46,7 +47,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ColorModeContext.Provider value={colorMode}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          {children}
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
         </ThemeProvider>
       </ColorModeContext.Provider>
     </AppRouterCacheProvider>

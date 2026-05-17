@@ -53,6 +53,9 @@ function TenantsContent() {
   const [tenants, setTenants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [properties, setProperties] = useState<any[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState(propertyId || 'all');
+  const [searchQuery, setSearchQuery] = useState('');
   
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
@@ -89,6 +92,28 @@ function TenantsContent() {
     }
   };
 
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('properties')
+          .select('id, name')
+          .order('name');
+        if (error) throw error;
+        setProperties(data || []);
+      } catch (error) {
+        console.error('Error fetching properties:', error);
+      }
+    };
+    fetchProperties();
+  }, []);
+
+  useEffect(() => {
+    if (propertyId) {
+      setSelectedProperty(propertyId);
+    }
+  }, [propertyId]);
+
   const fetchTenants = async () => {
     try {
       setLoading(true);
@@ -107,9 +132,9 @@ function TenantsContent() {
         query = query.eq('is_active', false);
       }
 
-      // Filter by property if coming from property card
-      if (propertyId) {
-        query = query.eq('property_id', propertyId);
+      // Filter by property
+      if (selectedProperty && selectedProperty !== 'all') {
+        query = query.eq('property_id', selectedProperty);
       }
 
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -125,13 +150,24 @@ function TenantsContent() {
 
   useEffect(() => {
     fetchTenants();
-  }, [statusFilter, propertyId]);
+  }, [statusFilter, selectedProperty]);
 
   const getStatusColor = (status: string) => {
     if (status === 'Active') return { color: '#10b981', label: 'Active' };
     if (status === 'Late Payment') return { color: '#f59e0b', label: 'Late Payment' };
     return { color: '#64748b', label: 'Inactive' };
   };
+
+  const filteredTenants = tenants.filter(t => {
+    const q = searchQuery.toLowerCase();
+    return (
+      (t.name || '').toLowerCase().includes(q) ||
+      (t.unit_number || '').toLowerCase().includes(q) ||
+      (t.phone_number || '').toLowerCase().includes(q) ||
+      (t.email || '').toLowerCase().includes(q) ||
+      (t.properties?.name || '').toLowerCase().includes(q)
+    );
+  });
 
   return (
     <Box sx={{ animation: 'fadeIn 0.5s ease' }}>
@@ -148,11 +184,23 @@ function TenantsContent() {
           <TextField
             select
             size="small"
+            value={selectedProperty}
+            onChange={(e) => setSelectedProperty(e.target.value)}
+            sx={{ minWidth: { xs: 100, sm: 160 }, '& .MuiSelect-select': { py: 0.75, fontSize: '0.75rem' } }}
+          >
+            <MenuItem value="all">All Properties</MenuItem>
+            {properties.map((p) => (
+              <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            select
+            size="small"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             sx={{ minWidth: { xs: 80, sm: 120 }, '& .MuiSelect-select': { py: 0.75, fontSize: '0.75rem' } }}
           >
-            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="all">All Status</MenuItem>
             <MenuItem value="active">Active</MenuItem>
             <MenuItem value="inactive">Inactive</MenuItem>
           </TextField>
@@ -183,6 +231,8 @@ function TenantsContent() {
         <Search size={18} style={{ color: alpha('#f8fafc', 0.5) }} />
         <InputBase
           placeholder="Search..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           sx={{ ml: 1, flex: 1, color: 'text.primary', fontSize: '0.85rem' }}
         />
       </Box>
@@ -195,7 +245,7 @@ function TenantsContent() {
         <>
           {/* Mobile View: Compact Cards */}
           <Stack spacing={1.5} sx={{ display: { xs: 'flex', md: 'none' }, mb: 4 }}>
-            {tenants.map((tenant) => {
+            {filteredTenants.map((tenant) => {
               const statusInfo = getStatusColor(tenant.is_active ? 'Active' : 'Inactive');
               return (
                 <Card key={tenant.id} sx={{ bgcolor: alpha('#fff', 0.01) }}>
@@ -267,7 +317,7 @@ function TenantsContent() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {tenants.map((tenant) => {
+                {filteredTenants.map((tenant) => {
                   const statusInfo = getStatusColor(tenant.is_active ? 'Active' : 'Inactive');
                   return (
                     <TableRow key={tenant.id} sx={{ '&:hover': { bgcolor: alpha('#fff', 0.01) } }}>
