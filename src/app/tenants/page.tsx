@@ -137,7 +137,7 @@ function TenantsContent() {
         query = query.eq('property_id', selectedProperty);
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await query.order('unit_number', { ascending: true });
 
       if (error) throw error;
       setTenants(data || []);
