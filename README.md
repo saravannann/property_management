@@ -1,4 +1,4 @@
-# 🏢 Property Manager
+# 🏢 PropZen
 
 A premium, cross-platform property management web application built with Next.js and Supabase.
 
@@ -13,7 +13,7 @@ A premium, cross-platform property management web application built with Next.js
 
 ## 🛠 Tech Stack
 
-- **Framework**: [Next.js 14 (App Router)](https://nextjs.org/)
+- **Framework**: [Next.js (App Router)](https://nextjs.org/)
 - **Database**: [Supabase](https://supabase.com/)
 - **Styling**: Vanilla CSS with modern Design Tokens
 - **Icons**: [Lucide React](https://lucide.dev/)

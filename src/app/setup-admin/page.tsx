@@ -40,7 +40,7 @@ export default function SetupAdminPage() {
           Initial Setup
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-          This will initialize the first Administrator account for your PropManager application.
+          This will initialize the first Administrator account for your PropZen application.
         </Typography>
 
         {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}

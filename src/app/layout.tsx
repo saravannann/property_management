@@ -8,8 +8,8 @@ import Script from "next/script";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Property Manager | Premium Real Estate Management",
-  description: "Advanced property and tenant management system",
+  title: "PropZen | Premium Property Management",
+  description: "Advanced property, utility, and tenant management system by PropZen",
 };
 
 export default function RootLayout({

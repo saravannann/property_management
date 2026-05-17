@@ -311,7 +311,7 @@ export default function LoginPage() {
         
         <Box sx={{ mt: 4, textAlign: 'center' }}>
           <Typography variant="caption" color="text.secondary">
-            © 2026 PropManager. All rights reserved.
+            © 2026 PropZen. All rights reserved.
           </Typography>
         </Box>
       </Container>

@@ -133,7 +133,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            PropManager
+            PropZen
           </Typography>
         </Box>
         <List sx={{ px: 2, flex: 1 }}>
