@@ -47,3 +47,21 @@ export async function createNewUser(formData: {
     return { success: false, error: error.message };
   }
 }
+
+export async function deleteUser(userId: string) {
+  try {
+    // Delete user from Supabase Auth using Admin service client
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (authError) throw authError;
+
+    // Delete corresponding profile just in case cascade trigger is not present
+    await supabaseAdmin.from('profiles').delete().eq('id', userId);
+
+    revalidatePath('/settings/users');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting user:', error);
+    return { success: false, error: error.message };
+  }
+}
+

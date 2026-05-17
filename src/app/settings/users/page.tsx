@@ -37,7 +37,7 @@ import {
   Trash2
 } from "lucide-react";
 import { supabase } from '@/lib/supabase';
-import { createNewUser } from './actions';
+import { createNewUser, deleteUser } from './actions';
 
 export default function UserManagementPage() {
   const theme = useTheme();
@@ -261,9 +261,17 @@ export default function UserManagementPage() {
                       size="small" 
                       color="error" 
                       onClick={async () => {
-                        if (confirm('Are you sure you want to delete this user? This will NOT delete their auth account but will remove their profile.')) {
-                          await supabase.from('profiles').delete().eq('id', profile.id);
-                          fetchProfiles();
+                        if (confirm('Are you sure you want to permanently delete this user? This will completely remove both their authentication account and user profile.')) {
+                          try {
+                            const res = await deleteUser(profile.id);
+                            if (res.success) {
+                              fetchProfiles();
+                            } else {
+                              alert('Error deleting user: ' + res.error);
+                            }
+                          } catch (err: any) {
+                            alert('Failed to delete user: ' + err.message);
+                          }
                         }
                       }}
                     >
