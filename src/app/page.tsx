@@ -42,6 +42,8 @@ export default function Dashboard() {
     vacantApartments: 0,
     vacantCommercial: 0,
     occupancyRate: 0,
+    pendingGenerationPercent: 100,
+    prevMonthName: '',
     recentActivity: [] as any[]
   });
 
@@ -125,7 +127,39 @@ export default function Dashboard() {
           pendingAmount = invData?.reduce((acc, inv) => acc + Number(inv.amount), 0) || 0;
         }
 
-        // 5. Recent Activity (Filtered by visible properties)
+        // 5. Calculate Pending Invoice Generation % for Previous Month
+        let pendingGenerationPercent = 100;
+        let prevMonthName = "";
+        
+        const today = new Date();
+        const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const prevMonthStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}-01`;
+        prevMonthName = prevMonthDate.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+
+        if (propertyIds.length > 0) {
+          const { data: activeTenantsForCalc } = await supabase
+            .from('tenants')
+            .select('id')
+            .eq('is_active', true)
+            .in('property_id', propertyIds);
+            
+          const activeTenantCount = activeTenantsForCalc?.length || 0;
+          
+          if (activeTenantCount > 0) {
+            const { count: generatedCount } = await supabase
+              .from('invoices')
+              .select('id', { count: 'exact', head: true })
+              .in('property_id', propertyIds)
+              .eq('billing_date', prevMonthStr);
+              
+            const generatedPercent = ((generatedCount || 0) / activeTenantCount) * 100;
+            pendingGenerationPercent = Math.max(0, Math.round(100 - generatedPercent));
+          } else {
+            pendingGenerationPercent = 0; // 0 active tenants = 0% pending
+          }
+        }
+
+        // 6. Recent Activity (Filtered by visible properties)
         const recentActivity = props
           ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 4)
@@ -146,6 +180,8 @@ export default function Dashboard() {
           vacantApartments,
           vacantCommercial,
           occupancyRate,
+          pendingGenerationPercent,
+          prevMonthName,
           recentActivity
         });
 
@@ -189,6 +225,13 @@ export default function Dashboard() {
       icon: <Home size={18} />, 
       color: '#f59e0b', // Amber
       path: '/properties'
+    },
+    { 
+      label: `Pending Generation (${data.prevMonthName})`, 
+      value: `${data.pendingGenerationPercent}%`, 
+      icon: <Receipt size={18} />, 
+      color: data.pendingGenerationPercent > 0 ? '#ef4444' : '#10b981', // Red if pending, Green if 0%
+      path: '/invoices/add'
     },
     { 
       label: "Revenue", 
