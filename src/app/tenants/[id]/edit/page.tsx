@@ -149,6 +149,8 @@ export default function EditTenantPage({ params }: { params: Promise<{ id: strin
           property_id: formData.property_id,
           unit_number: formData.unit_number,
           monthly_rent: parseFloat(formData.monthly_rent),
+          electricity_rate: Number(formData.electricity_rate),
+          water_charges: Number(formData.water_charges),
           security_deposit: parseFloat(formData.security_deposit || '0'),
           move_in_date: formData.move_in_date,
           move_out_date: formData.move_out_date || null,
