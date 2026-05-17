@@ -1,8 +1,23 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 type Locale = 'en' | 'ta';
+
+// Helper to sync Google Translate Cookie
+const syncGoogleTranslateCookie = (lang: Locale) => {
+  const domain = window.location.hostname;
+  document.cookie = `googtrans=/en/${lang}; path=/;`;
+  document.cookie = `googtrans=/en/${lang}; path=/; domain=${domain};`;
+  if (domain !== 'localhost') {
+    const parts = domain.split('.');
+    if (parts.length > 2) {
+      const parentDomain = parts.slice(-2).join('.');
+      document.cookie = `googtrans=/en/${lang}; path=/; domain=.${parentDomain};`;
+    }
+  }
+};
 
 export const translations = {
   en: {
@@ -18,7 +33,9 @@ export const translations = {
       actions: "Actions",
       save: "Save",
       cancel: "Cancel",
-      loading: "Loading..."
+      loading: "Loading...",
+      settings: "Settings",
+      users: "Users"
     },
     dashboard: {
       occupancy: "Occupancy Rate",
@@ -90,7 +107,9 @@ export const translations = {
       actions: "செயல்கள்",
       save: "சேமி",
       cancel: "ரத்து செய்",
-      loading: "ஏற்றப்படுகிறது..."
+      loading: "ஏற்றப்படுகிறது...",
+      settings: "அமைப்புகள்",
+      users: "பயனர்கள்"
     },
     dashboard: {
       occupancy: "குடியேற்ற வீதம்",
@@ -179,48 +198,60 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('en');
 
   useEffect(() => {
+    // 1. Initial LocalStorage Sync for rapid render
     const savedLocale = localStorage.getItem('app-locale') as Locale;
     if (savedLocale === 'en' || savedLocale === 'ta') {
       setLocaleState(savedLocale);
-      
-      // Ensure the Google Translate cookie aligns with user preference
-      const getCookie = (name: string) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop()?.split(';').shift();
-      };
-      
-      const currentTrans = getCookie('googtrans');
-      if (currentTrans !== `/en/${savedLocale}`) {
-        const domain = window.location.hostname;
-        document.cookie = `googtrans=/en/${savedLocale}; path=/;`;
-        document.cookie = `googtrans=/en/${savedLocale}; path=/; domain=${domain};`;
-        if (domain !== 'localhost') {
-          const parts = domain.split('.');
-          if (parts.length > 2) {
-            const parentDomain = parts.slice(-2).join('.');
-            document.cookie = `googtrans=/en/${savedLocale}; path=/; domain=.${parentDomain};`;
+      syncGoogleTranslateCookie(savedLocale);
+    }
+
+    // 2. Fetch authenticated user profile settings from Supabase database
+    const syncDbLocale = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('language')
+            .eq('id', user.id)
+            .single();
+
+          if (!error && profile?.language && (profile.language === 'en' || profile.language === 'ta')) {
+            const dbLocale = profile.language as Locale;
+            if (dbLocale !== savedLocale) {
+              localStorage.setItem('app-locale', dbLocale);
+              setLocaleState(dbLocale);
+              syncGoogleTranslateCookie(dbLocale);
+              
+              // Force translation scanner reload if mismatch detected
+              window.location.reload();
+            }
           }
         }
+      } catch (err) {
+        console.error('Error syncing user profile locale from Supabase:', err);
       }
-    }
+    };
+    syncDbLocale();
   }, []);
 
-  const setLocale = (newLocale: Locale) => {
+  const setLocale = async (newLocale: Locale) => {
+    // Immediately update local UI state & cookie for fast feedback
     setLocaleState(newLocale);
     localStorage.setItem('app-locale', newLocale);
+    syncGoogleTranslateCookie(newLocale);
 
-    // Sync with Google Translate Element cookie
-    const domain = window.location.hostname;
-    document.cookie = `googtrans=/en/${newLocale}; path=/;`;
-    document.cookie = `googtrans=/en/${newLocale}; path=/; domain=${domain};`;
-    
-    if (domain !== 'localhost') {
-      const parts = domain.split('.');
-      if (parts.length > 2) {
-        const parentDomain = parts.slice(-2).join('.');
-        document.cookie = `googtrans=/en/${newLocale}; path=/; domain=.${parentDomain};`;
+    // Save locale selection to user profile in Supabase database
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ language: newLocale })
+          .eq('id', user.id);
       }
+    } catch (err) {
+      console.error('Error saving user profile locale choice to Supabase:', err);
     }
 
     // Force page reload so Google Translate automatically re-scans the DOM with the new language

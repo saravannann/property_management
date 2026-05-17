@@ -169,6 +169,7 @@ export default function UserManagementPage() {
                 <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Member</TableCell>
                 <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Email / Phone</TableCell>
                 <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Role</TableCell>
+                <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Language</TableCell>
                 <TableCell sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Joined Date</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 800, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.7rem' }}>Actions</TableCell>
               </TableRow>
@@ -214,6 +215,33 @@ export default function UserManagementPage() {
                       variant="outlined"
                       sx={{ fontWeight: 800, fontSize: '0.65rem' }}
                     />
+                  </TableCell>
+                  <TableCell>
+                    <TextField
+                      select
+                      size="small"
+                      value={profile.language || 'en'}
+                      onChange={async (e) => {
+                        try {
+                          const newLang = e.target.value;
+                          const { error } = await supabase
+                            .from('profiles')
+                            .update({ language: newLang })
+                            .eq('id', profile.id);
+                          if (error) throw error;
+                          fetchProfiles();
+                        } catch (err: any) {
+                          alert('Error updating language: ' + err.message);
+                        }
+                      }}
+                      sx={{ 
+                        width: 105, 
+                        '& .MuiOutlinedInput-root': { fontSize: '0.75rem', height: 32 }
+                      }}
+                    >
+                      <MenuItem value="en">English</MenuItem>
+                      <MenuItem value="ta">தமிழ்</MenuItem>
+                    </TextField>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary">

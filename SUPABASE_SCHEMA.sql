@@ -157,3 +157,7 @@ USING (
     OR auth.uid() = ANY(assigned_managers)
   )
 );
+
+-- 8. Add language preference column to profiles
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS language VARCHAR(10) DEFAULT 'en';
+

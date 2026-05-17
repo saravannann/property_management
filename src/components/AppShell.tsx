@@ -103,7 +103,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   if (userRole === 'admin') {
-    navItems.push({ label: "Users", icon: <Shield size={20} />, href: "/settings/users" });
+    navItems.push({ label: t('common.users'), icon: <Shield size={20} />, href: "/settings/users" });
   }
 
   return (
@@ -184,7 +184,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <Settings size={20} />
               </ListItemIcon>
               <ListItemText 
-                primary={<Typography sx={{ fontWeight: 500 }}>Settings</Typography>} 
+                primary={<Typography sx={{ fontWeight: 500 }}>{t('common.settings')}</Typography>} 
               />
             </ListItemButton>
           </ListItem>
