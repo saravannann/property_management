@@ -19,7 +19,11 @@ import {
   Stack,
   alpha,
   useTheme,
-  CircularProgress
+  CircularProgress,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel
 } from '@mui/material';
 import { 
   Receipt, 
@@ -40,6 +44,13 @@ export default function InvoicesPage() {
   const theme = useTheme();
   const [invoices, setInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterPropertyId, setFilterPropertyId] = useState('');
+  const [filterMonth, setFilterMonth] = useState('');
+  const [filterTenantId, setFilterTenantId] = useState('');
+
   const [stats, setStats] = useState({
     totalCollected: 0,
     pendingAmount: 0,
@@ -111,6 +122,34 @@ export default function InvoicesPage() {
     }
   };
 
+  // Compute unique filter options dynamically from the loaded invoices
+  const uniqueProperties = Array.from(new Set(invoices.map(inv => inv.property_id))).map(id => {
+    const inv = invoices.find(i => i.property_id === id);
+    return { id, name: inv?.properties?.name || 'Unknown' };
+  }).filter(p => p.id);
+
+  const uniqueMonths = Array.from(new Set(invoices.map(inv => inv.billing_date))).filter(Boolean).sort((a: any, b: any) => new Date(b).getTime() - new Date(a).getTime());
+
+  const uniqueTenants = Array.from(new Set(invoices.map(inv => inv.tenant_id))).map(id => {
+    const inv = invoices.find(i => i.tenant_id === id);
+    return { id, name: inv?.tenants?.name || 'Unknown' };
+  }).filter(t => t.id);
+
+  // Apply filters to invoices
+  const filteredInvoices = invoices.filter(inv => {
+    let match = true;
+    if (filterPropertyId && inv.property_id !== filterPropertyId) match = false;
+    if (filterTenantId && inv.tenant_id !== filterTenantId) match = false;
+    if (filterMonth && inv.billing_date !== filterMonth) match = false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const num = (inv.invoice_number || '').toLowerCase();
+      const tenant = (inv.tenants?.name || '').toLowerCase();
+      if (!num.includes(q) && !tenant.includes(q)) match = false;
+    }
+    return match;
+  });
+
   return (
     <Box sx={{ animation: 'fadeIn 0.5s ease' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
@@ -159,24 +198,62 @@ export default function InvoicesPage() {
         ))}
       </Grid>
 
-      {/* Search Bar */}
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        bgcolor: 'background.paper', 
-        px: 3, 
-        py: 1.5, 
-        borderRadius: 3,
-        border: '1px solid rgba(255, 255, 255, 0.05)',
-        mb: 4
-      }}>
-        <Search size={20} style={{ color: alpha('#f8fafc', 0.5) }} />
-        <InputBase
-          placeholder="Search by invoice number or tenant..."
-          sx={{ ml: 2, flex: 1, color: 'text.primary', fontSize: '0.95rem' }}
-        />
-        <IconButton size="small"><Filter size={18} /></IconButton>
-      </Box>
+      {/* Search and Filters */}
+      <Card sx={{ mb: 4, bgcolor: 'background.paper', border: '1px solid rgba(255, 255, 255, 0.05)', boxShadow: 'none' }}>
+        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+          <Grid container spacing={2} sx={{ alignItems: 'center' }}>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', bgcolor: alpha(theme.palette.text.primary, 0.04), borderRadius: 2, px: 2, py: 1.5 }}>
+                <Search size={20} style={{ color: alpha('#f8fafc', 0.5) }} />
+                <InputBase
+                  placeholder="Search invoice # or tenant..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  sx={{ ml: 2, flex: 1, fontSize: '0.95rem' }}
+                />
+              </Box>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4, md: 2 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Property</InputLabel>
+                <Select value={filterPropertyId} label="Property" onChange={(e) => setFilterPropertyId(e.target.value)}>
+                  <MenuItem value="">All Properties</MenuItem>
+                  {uniqueProperties.map(p => <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4, md: 2 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Tenant</InputLabel>
+                <Select value={filterTenantId} label="Tenant" onChange={(e) => setFilterTenantId(e.target.value)}>
+                  <MenuItem value="">All Tenants</MenuItem>
+                  {uniqueTenants.map(t => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 4, md: 2 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Month</InputLabel>
+                <Select value={filterMonth} label="Month" onChange={(e) => setFilterMonth(e.target.value)}>
+                  <MenuItem value="">All Months</MenuItem>
+                  {uniqueMonths.map((m: any) => <MenuItem key={m} value={m}>{new Date(m).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, md: 2 }}>
+              <Button 
+                fullWidth 
+                variant="text" 
+                color="secondary" 
+                onClick={() => { setFilterPropertyId(''); setFilterTenantId(''); setFilterMonth(''); setSearchQuery(''); }}
+                disabled={!filterPropertyId && !filterTenantId && !filterMonth && !searchQuery}
+              >
+                Clear Filters
+              </Button>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
       <TableContainer component={Card}>
         <Table sx={{ minWidth: 650 }}>
@@ -197,7 +274,13 @@ export default function InvoicesPage() {
                   <CircularProgress />
                 </TableCell>
               </TableRow>
-            ) : invoices.map((invoice) => (
+            ) : filteredInvoices.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+                  No invoices found matching your filters.
+                </TableCell>
+              </TableRow>
+            ) : filteredInvoices.map((invoice) => (
               <TableRow key={invoice.id} sx={{ '&:hover': { bgcolor: alpha('#fff', 0.01) } }}>
                 <TableCell sx={{ fontFamily: 'monospace', fontWeight: 700, color: 'primary.light' }}>
                   {invoice.invoice_number || invoice.id.slice(0, 8).toUpperCase()}
