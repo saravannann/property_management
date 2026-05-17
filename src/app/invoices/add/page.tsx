@@ -121,6 +121,29 @@ export default function AddInvoicePage() {
     fetchTenants();
   }, []);
 
+  // Track which tenants have already been invoiced for the selected billing month
+  const [invoicedTenantIds, setInvoicedTenantIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchInvoicedTenants = async () => {
+      if (!formData.billing_month) return;
+      try {
+        const { data, error } = await supabase
+          .from('invoices')
+          .select('tenant_id')
+          .eq('billing_date', formData.billing_month);
+          
+        if (error) throw error;
+        
+        const ids = data?.map(d => d.tenant_id) || [];
+        setInvoicedTenantIds(ids);
+      } catch (error) {
+        console.error('Error fetching invoiced tenants:', error);
+      }
+    };
+    fetchInvoicedTenants();
+  }, [formData.billing_month]);
+
   // When tenant changes, fetch their last invoice and current rent
   useEffect(() => {
     const fetchTenantData = async () => {
@@ -185,12 +208,12 @@ export default function AddInvoicePage() {
     return Array.from(propsMap.values());
   }, [tenants]);
 
-  // Filter tenants based on selected property
+  // Filter tenants based on selected property and whether they've been invoiced
   const filteredTenants = useMemo(() => {
     return formData.property_id 
-      ? tenants.filter(t => t.property_id === formData.property_id)
+      ? tenants.filter(t => t.property_id === formData.property_id && !invoicedTenantIds.includes(t.id))
       : [];
-  }, [tenants, formData.property_id]);
+  }, [tenants, formData.property_id, invoicedTenantIds]);
 
   // Proration Logic
   const prorationDetails = useMemo(() => {
@@ -398,7 +421,7 @@ export default function AddInvoicePage() {
                       disabled={!formData.property_id || fetchingTenants}
                     >
                       {filteredTenants.length === 0 && formData.property_id && (
-                        <MenuItem disabled value="">No active tenants</MenuItem>
+                        <MenuItem disabled value="">All tenants invoiced / No active tenants</MenuItem>
                       )}
                       {filteredTenants.map((t) => (
                         <MenuItem key={t.id} value={t.id}>{t.name} {t.unit_number ? `(${t.unit_number})` : ''}</MenuItem>
