@@ -476,6 +476,11 @@ export default function AddInvoicePage() {
                   <Grid size={{ xs: 12, md: 4 }}>
                     <TextField 
                       fullWidth type="number" label="Curr Reading" name="curr_electricity_reading" value={formData.curr_electricity_reading} onChange={handleChange}
+                      onBlur={() => {
+                        if (formData.curr_electricity_reading !== '' && Number(formData.curr_electricity_reading) < Number(formData.prev_electricity_reading)) {
+                          setFormData(prev => ({ ...prev, curr_electricity_reading: '' }));
+                        }
+                      }}
                       slotProps={{ input: { endAdornment: <InputAdornment position="end">kWh</InputAdornment> } }}
                       autoFocus
                     />
@@ -486,6 +491,13 @@ export default function AddInvoicePage() {
                       slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment> } }}
                     />
                   </Grid>
+                  {formData.curr_electricity_reading !== '' && Number(formData.curr_electricity_reading) < Number(formData.prev_electricity_reading) && (
+                    <Grid size={{ xs: 12 }}>
+                      <Alert severity="error" sx={{ bgcolor: alpha(theme.palette.error.main, 0.05), border: '1px solid', borderColor: alpha(theme.palette.error.main, 0.2) }}>
+                        <strong>Invalid Reading:</strong> Current reading ({formData.curr_electricity_reading}) cannot be less than the previous reading ({formData.prev_electricity_reading}).
+                      </Alert>
+                    </Grid>
+                  )}
                   {electricityUsage >= 500 && (
                     <Grid size={{ xs: 12 }}>
                       <Alert severity="warning" sx={{ bgcolor: alpha(theme.palette.warning.main, 0.05), border: '1px solid', borderColor: alpha(theme.palette.warning.main, 0.2) }}>
