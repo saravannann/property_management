@@ -74,6 +74,7 @@ CREATE TABLE invoices (
   
   -- Totals
   amount DECIMAL(12, 2) NOT NULL, -- Total amount due
+  amount_paid DECIMAL(12, 2) DEFAULT 0, -- Amount paid so far (for partial payments)
   billing_date DATE NOT NULL,
   due_date DATE NOT NULL,
   status TEXT DEFAULT 'pending', -- pending, paid, overdue

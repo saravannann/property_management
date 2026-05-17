@@ -19,7 +19,12 @@ import {
   Stack,
   alpha,
   useTheme,
-  CircularProgress
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField
 } from '@mui/material';
 import { ChevronLeft, Printer, Download, CheckCircle, Clock, AlertCircle, History } from "lucide-react";
 import Link from "next/link";
@@ -33,6 +38,10 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [invoice, setInvoice] = useState<any>(null);
+  
+  // Partial Payment Modal State
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -71,20 +80,39 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
     fetchInvoice();
   }, [resolvedParams.id]);
 
-  const handleMarkAsPaid = async () => {
+  const handleMarkAsPaid = async (isFull: boolean) => {
     try {
       setUpdating(true);
+      
+      const totalAmount = Number(invoice.amount);
+      const currentlyPaid = Number(invoice.amount_paid || 0);
+      
+      let newPaid = totalAmount;
+      if (!isFull) {
+        const added = Number(paymentAmount);
+        if (isNaN(added) || added <= 0) {
+          alert("Please enter a valid amount");
+          setUpdating(false);
+          return;
+        }
+        newPaid = currentlyPaid + added;
+      }
+
+      const newStatus = newPaid >= totalAmount ? 'paid' : invoice.status;
+
       const { error } = await supabase
         .from('invoices')
-        .update({ status: 'paid' })
+        .update({ status: newStatus, amount_paid: newPaid })
         .eq('id', invoice.id);
         
       if (error) throw error;
       
-      setInvoice({ ...invoice, status: 'paid' });
+      setInvoice({ ...invoice, status: newStatus, amount_paid: newPaid });
+      setPaymentModalOpen(false);
+      setPaymentAmount('');
     } catch (error) {
-      console.error('Error marking as paid:', error);
-      alert('Failed to mark invoice as paid.');
+      console.error('Error recording payment:', error);
+      alert('Failed to record payment.');
     } finally {
       setUpdating(false);
     }
@@ -139,15 +167,25 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
         </Button>
         <Stack direction="row" spacing={2}>
           {(invoice.status === 'pending' || invoice.status === 'overdue') && (
-            <Button 
-              variant="contained" 
-              color="success" 
-              startIcon={updating ? <CircularProgress size={18} color="inherit" /> : <CheckCircle size={18} />} 
-              onClick={handleMarkAsPaid}
-              disabled={updating}
-            >
-              Mark as Paid
-            </Button>
+            <>
+              <Button 
+                variant="outlined" 
+                color="primary" 
+                onClick={() => setPaymentModalOpen(true)}
+                disabled={updating}
+              >
+                Record Partial Payment
+              </Button>
+              <Button 
+                variant="contained" 
+                color="success" 
+                startIcon={updating ? <CircularProgress size={18} color="inherit" /> : <CheckCircle size={18} />} 
+                onClick={() => handleMarkAsPaid(true)}
+                disabled={updating}
+              >
+                Mark as Paid in Full
+              </Button>
+            </>
           )}
           <Button variant="outlined" startIcon={<Printer size={18} />} onClick={handlePrint}>
             Print
@@ -274,13 +312,31 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
           {/* Totals */}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Box sx={{ width: { xs: '100%', sm: '50%' } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>Grand Total</Typography>
-                <Typography variant="h5" sx={{ fontWeight: 900, color: 'primary.main' }}>
+                <Typography variant="h6" sx={{ fontWeight: 900 }}>
                   ₹{Number(invoice.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </Typography>
               </Box>
-              <Divider sx={{ mb: 2 }} />
+              
+              {Number(invoice.amount_paid) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, color: 'success.main' }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>Amount Paid</Typography>
+                  <Typography variant="body1" sx={{ fontWeight: 800 }}>
+                    - ₹{Number(invoice.amount_paid).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </Typography>
+                </Box>
+              )}
+
+              <Divider sx={{ my: 2 }} />
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h5" sx={{ fontWeight: 800 }}>Balance Due</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 900, color: 'primary.main' }}>
+                  ₹{Math.max(0, Number(invoice.amount) - Number(invoice.amount_paid || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                </Typography>
+              </Box>
+
               {invoice.description && (
                 <Box sx={{ mt: 3, p: 2, bgcolor: alpha(theme.palette.info.main, 0.05), borderRadius: 2 }}>
                   <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase' }}>Notes</Typography>
@@ -292,6 +348,35 @@ export default function InvoiceDetailsPage({ params }: { params: Promise<{ id: s
 
         </CardContent>
       </Card>
+
+      {/* Partial Payment Modal */}
+      <Dialog open={paymentModalOpen} onClose={() => setPaymentModalOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Record Partial Payment</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
+            Enter the amount the tenant has paid. This will be deducted from the total balance.
+          </Typography>
+          <TextField
+            fullWidth
+            label="Payment Amount (₹)"
+            type="number"
+            value={paymentAmount}
+            onChange={(e) => setPaymentAmount(e.target.value)}
+            slotProps={{ htmlInput: { min: 1, max: Number(invoice.amount) - Number(invoice.amount_paid || 0) } }}
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button onClick={() => setPaymentModalOpen(false)} color="inherit">Cancel</Button>
+          <Button 
+            onClick={() => handleMarkAsPaid(false)} 
+            variant="contained" 
+            disabled={!paymentAmount || Number(paymentAmount) <= 0}
+          >
+            Save Payment
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

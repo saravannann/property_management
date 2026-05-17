@@ -121,12 +121,12 @@ export default function Dashboard() {
         if (propertyIds.length > 0) {
           const { data: invData, count } = await supabase
             .from('invoices')
-            .select('amount', { count: 'exact' })
+            .select('amount, amount_paid', { count: 'exact' })
             .eq('status', 'pending')
             .in('property_id', propertyIds);
           
           pendingInvoices = count || 0;
-          pendingAmount = invData?.reduce((acc, inv) => acc + Number(inv.amount), 0) || 0;
+          pendingAmount = invData?.reduce((acc, inv) => acc + Math.max(0, Number(inv.amount) - Number(inv.amount_paid || 0)), 0) || 0;
         }
 
         // 5. Calculate Pending Invoice Generation % for Previous Month
@@ -166,7 +166,7 @@ export default function Dashboard() {
         if (propertyIds.length > 0) {
           const { data: unpaidInvoices } = await supabase
             .from('invoices')
-            .select('tenant_id, amount')
+            .select('tenant_id, amount, amount_paid')
             .in('status', ['pending', 'overdue'])
             .in('property_id', propertyIds);
 
@@ -178,7 +178,8 @@ export default function Dashboard() {
 
           if (unpaidInvoices && activeTenantsList) {
             const unpaidByTenant = unpaidInvoices.reduce((acc, inv) => {
-              acc[inv.tenant_id] = (acc[inv.tenant_id] || 0) + Number(inv.amount);
+              const balance = Math.max(0, Number(inv.amount) - Number(inv.amount_paid || 0));
+              acc[inv.tenant_id] = (acc[inv.tenant_id] || 0) + balance;
               return acc;
             }, {} as Record<string, number>);
 

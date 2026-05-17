@@ -77,14 +77,17 @@ export default function InvoicesPage() {
       setInvoices(data || []);
 
       // Calculate stats
-      const collected = data?.filter(inv => inv.status === 'paid')
-        .reduce((sum, inv) => sum + Number(inv.amount), 0) || 0;
+      const collected = data?.reduce((sum, inv) => {
+        // If it's explicitly 'paid', we count the full amount (or amount_paid if it exists)
+        if (inv.status === 'paid') return sum + Number(inv.amount);
+        return sum + Number(inv.amount_paid || 0);
+      }, 0) || 0;
       
       const pending = data?.filter(inv => inv.status === 'pending')
-        .reduce((sum, inv) => sum + Number(inv.amount), 0) || 0;
+        .reduce((sum, inv) => sum + Math.max(0, Number(inv.amount) - Number(inv.amount_paid || 0)), 0) || 0;
       
       const overdue = data?.filter(inv => inv.status === 'overdue')
-        .reduce((sum, inv) => sum + Number(inv.amount), 0) || 0;
+        .reduce((sum, inv) => sum + Math.max(0, Number(inv.amount) - Number(inv.amount_paid || 0)), 0) || 0;
 
       setStats({
         totalCollected: collected,

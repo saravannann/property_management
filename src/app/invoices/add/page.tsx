@@ -171,11 +171,11 @@ export default function AddInvoicePage() {
         // Also fetch any pending/overdue balance
         const { data: unpaidInvoices } = await supabase
           .from('invoices')
-          .select('amount')
+          .select('amount, amount_paid')
           .eq('tenant_id', formData.tenant_id)
           .in('status', ['pending', 'overdue']);
         
-        const totalUnpaid = unpaidInvoices?.reduce((sum, inv) => sum + Number(inv.amount), 0) || 0;
+        const totalUnpaid = unpaidInvoices?.reduce((sum, inv) => sum + Math.max(0, Number(inv.amount) - Number(inv.amount_paid || 0)), 0) || 0;
 
         setFormData(prev => ({
           ...prev,
