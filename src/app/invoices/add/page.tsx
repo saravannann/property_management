@@ -267,6 +267,12 @@ export default function AddInvoicePage() {
       return;
     }
 
+    if (electricityUsage >= 500) {
+      if (!window.confirm(`High Electricity Usage Warning: The calculated usage is ${electricityUsage} kWh. Are you sure you want to generate this invoice?`)) {
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       const tenant = tenants.find(t => t.id === formData.tenant_id);
@@ -480,6 +486,13 @@ export default function AddInvoicePage() {
                       slotProps={{ input: { startAdornment: <InputAdornment position="start">₹</InputAdornment> } }}
                     />
                   </Grid>
+                  {electricityUsage >= 500 && (
+                    <Grid size={{ xs: 12 }}>
+                      <Alert severity="warning" sx={{ bgcolor: alpha(theme.palette.warning.main, 0.05), border: '1px solid', borderColor: alpha(theme.palette.warning.main, 0.2) }}>
+                        <strong>High Electricity Usage Warning:</strong> The calculated usage is <strong>{electricityUsage} kWh</strong>. Please double-check the readings before proceeding.
+                      </Alert>
+                    </Grid>
+                  )}
                   <Grid size={{ xs: 12 }}>
                     <Alert icon={<History size={18} />} severity="info" sx={{ bgcolor: alpha(theme.palette.info.main, 0.05), color: 'info.main', border: '1px solid', borderColor: alpha(theme.palette.info.main, 0.2) }}>
                       Usage: <strong>{electricityUsage} Units</strong> × ₹{formData.electricity_rate} = <strong>₹{electricityAmount.toLocaleString()}</strong>
