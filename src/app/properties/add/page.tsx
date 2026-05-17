@@ -171,7 +171,7 @@ export default function AddPropertyPage() {
           <Stack spacing={4}>
             {/* Basic Information */}
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.main', display: 'flex' }}>
                     <Info size={20} />
@@ -236,7 +236,7 @@ export default function AddPropertyPage() {
 
             {/* Location Details */}
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha('#c084fc', 0.1), color: '#c084fc', display: 'flex' }}>
                     <MapPin size={20} />
@@ -296,7 +296,7 @@ export default function AddPropertyPage() {
           <Stack spacing={4}>
             {/* Media Upload */}
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha('#fbbf24', 0.1), color: '#fbbf24', display: 'flex' }}>
                     <Upload size={20} />
@@ -327,7 +327,7 @@ export default function AddPropertyPage() {
 
             {/* Actions */}
             <Card sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05), border: '1px solid', borderColor: alpha(theme.palette.primary.main, 0.1) }}>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Ready to Publish?</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                   Ensure all details are correct. You can edit this property later at any time.

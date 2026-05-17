@@ -156,7 +156,7 @@ export default function SettingsPage() {
         {/* Profile Card */}
         <Grid size={{ xs: 12 }}>
           <Card>
-            <CardContent sx={{ p: 4 }}>
+            <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignItems: 'center', mb: 4 }}>
                 <Avatar sx={{ 
                   width: 70, 

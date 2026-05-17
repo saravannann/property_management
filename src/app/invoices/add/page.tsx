@@ -403,7 +403,7 @@ export default function AddInvoicePage() {
         <Grid size={{ xs: 12, md: 8 }}>
           <Stack spacing={3}>
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.main', display: 'flex' }}>
                     <User size={20} />
@@ -487,7 +487,7 @@ export default function AddInvoicePage() {
             </Card>
 
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha('#fbbf24', 0.1), color: '#fbbf24', display: 'flex' }}>
                     <Zap size={20} />
@@ -563,7 +563,7 @@ export default function AddInvoicePage() {
             </Card>
 
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha('#ef4444', 0.1), color: '#ef4444', display: 'flex' }}>
                     <History size={20} />
@@ -582,7 +582,7 @@ export default function AddInvoicePage() {
 
         <Grid size={{ xs: 12, md: 4 }}>
           <Card sx={{ position: 'sticky', top: 24, bgcolor: alpha(theme.palette.primary.main, 0.03), border: '1px solid', borderColor: alpha(theme.palette.primary.main, 0.1) }}>
-            <CardContent sx={{ p: 4 }}>
+            <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
               <Typography variant="h6" sx={{ fontWeight: 800, mb: 3 }}>Invoice Summary</Typography>
               
               <Stack spacing={2}>

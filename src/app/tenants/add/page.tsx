@@ -198,7 +198,7 @@ export default function AddTenantPage() {
           <Stack spacing={4}>
             {/* Personal Information */}
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.main', display: 'flex' }}>
                     <User size={20} />
@@ -231,7 +231,7 @@ export default function AddTenantPage() {
 
             {/* Lease Details */}
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha('#c084fc', 0.1), color: '#c084fc', display: 'flex' }}>
                     <Home size={20} />
@@ -371,7 +371,7 @@ export default function AddTenantPage() {
         <Grid size={{ xs: 12, lg: 4 }}>
           <Stack spacing={4}>
             <Card sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05), border: '1px solid', borderColor: alpha(theme.palette.primary.main, 0.1) }}>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Ready to Onboard?</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                   By adding this tenant, they will be registered in your property management system.

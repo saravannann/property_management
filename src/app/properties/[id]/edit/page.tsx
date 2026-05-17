@@ -293,7 +293,7 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
         <Grid size={{ xs: 12, lg: 8 }}>
           <Stack spacing={4}>
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha(theme.palette.primary.main, 0.1), color: 'primary.main', display: 'flex' }}>
                     <Info size={20} />
@@ -390,7 +390,7 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
             </Card>
 
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha('#c084fc', 0.1), color: '#c084fc', display: 'flex' }}>
                     <MapPin size={20} />
@@ -420,7 +420,7 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
         <Grid size={{ xs: 12, lg: 4 }}>
           <Stack spacing={4}>
             <Card>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3 }}>
                   <Box sx={{ p: 1, borderRadius: 1.5, bgcolor: alpha('#fbbf24', 0.1), color: '#fbbf24', display: 'flex' }}>
                     <Upload size={20} />
@@ -435,7 +435,7 @@ export default function EditPropertyPage({ params }: { params: Promise<{ id: str
             </Card>
 
             <Card sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05), border: '1px solid', borderColor: alpha(theme.palette.primary.main, 0.1) }}>
-              <CardContent sx={{ p: 4 }}>
+              <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2 }}>Confirm Changes</Typography>
                 <Stack spacing={2}>
                   <Button 

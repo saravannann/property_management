@@ -171,7 +171,7 @@ function TenantsContent() {
 
   return (
     <Box sx={{ animation: 'fadeIn 0.5s ease' }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: { xs: 2, md: 4 } }}>
+      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'stretch', sm: 'center' }, gap: { xs: 2, sm: 0 }, mb: { xs: 2, md: 4 } }}>
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5, fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
             Tenants
@@ -180,13 +180,13 @@ function TenantsContent() {
             Manage residents and lease agreements.
           </Typography>
         </Box>
-        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center', width: { xs: '100%', sm: 'auto' }, justifyContent: { xs: 'stretch', sm: 'flex-end' } }}>
           <TextField
             select
             size="small"
             value={selectedProperty}
             onChange={(e) => setSelectedProperty(e.target.value)}
-            sx={{ minWidth: { xs: 100, sm: 160 }, '& .MuiSelect-select': { py: 0.75, fontSize: '0.75rem' } }}
+            sx={{ flex: { xs: 1.2, sm: 'none' }, minWidth: { xs: 0, sm: 160 }, '& .MuiSelect-select': { py: 0.75, fontSize: '0.75rem' } }}
           >
             <MenuItem value="all">All Properties</MenuItem>
             {properties.map((p) => (
@@ -198,7 +198,7 @@ function TenantsContent() {
             size="small"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            sx={{ minWidth: { xs: 80, sm: 120 }, '& .MuiSelect-select': { py: 0.75, fontSize: '0.75rem' } }}
+            sx={{ flex: { xs: 1, sm: 'none' }, minWidth: { xs: 0, sm: 120 }, '& .MuiSelect-select': { py: 0.75, fontSize: '0.75rem' } }}
           >
             <MenuItem value="all">All Status</MenuItem>
             <MenuItem value="active">Active</MenuItem>
@@ -210,7 +210,7 @@ function TenantsContent() {
             startIcon={<Plus size={16} />}
             component={Link}
             href="/tenants/add"
-            sx={{ whiteSpace: 'nowrap' }}
+            sx={{ whiteSpace: 'nowrap', py: 0.9 }}
           >
             Add
           </Button>
